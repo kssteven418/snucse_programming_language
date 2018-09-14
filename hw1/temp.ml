@@ -3,6 +3,7 @@
 
 let rec sigma : int * int * (int->int) -> int = fun (a, b, f) ->
 	if a==b then (f a)
+	else if a > b then 0
 	else (f a) + (sigma (a+1, b, f))
 
 		
@@ -27,7 +28,10 @@ let _ = print_endline (string_of_int s3)
 (* exercise 2 *)
 
 let sumprod : (int*int->float) * int * int -> float = fun (m, n, k) ->
-	let rec loop_sum i = 
+	
+	if k < 1 then 1.0
+	else if n < 1 then 0.0
+	else let rec loop_sum i = 
 		if i == n+1 then 0.
 		else let rec loop_mult j =
 			if j == k+1 then 1.
@@ -38,6 +42,8 @@ let sumprod : (int*int->float) * int * int -> float = fun (m, n, k) ->
 
 (* debugging 2 *)
 
+let _ = print_endline "DEBUG2"
+
 let f1 : int*int -> float = fun (x, y) -> float_of_int (x+y)
 let f2 : int*int -> float = fun (x, y) -> float_of_int (x+y+y)
 
@@ -45,6 +51,10 @@ let ss1 = sumprod(f1, 3, 5)
 let ss2 = sumprod(f2, 3, 5)
 let _ = print_endline (string_of_float ss1)
 let _ = print_endline (string_of_float ss2)
+
+
+let matrix (i, j) = ((float_of_int i) *. 10.) +. (float_of_int j)
+let _ = print_endline (string_of_float (sumprod (matrix, 2, (-1))))
 
 
 (* excercise 3 *)
@@ -154,16 +164,6 @@ let _ = print_endline (string_of_bool s)
 let s = eval (LESS(PLUS(NUM 0, NUM 2), MINUS(PLUS(NUM 1, NUM 2), NUM 1)))
 let _ = print_endline (string_of_bool s)
 	
-(*
-let sumprod : (int*int->float) * int * int -> float = fun (m, n, k) ->
-	let rec loop_sum i = 
-		if i == n+1 then 0.
-		else let rec loop_mult j =
-			if j == k+1 then 1.
-			else (m(i, j)) *.  (loop_mult(j+1)) in
-		(loop_mult 1) +. (loop_sum(i+1)) in
-	loop_sum 1
-*)
 
 (* exercise 5 *)
 
@@ -236,24 +236,3 @@ let _ = print_endline (string_of_int i1_2)
 let _ = print_endline (string_of_int i2_4)
 let _ = print_endline (string_of_int i4_4)
 
-	
-let sumprod : (int*int->float) * int * int -> float = fun (m, n, k) ->
-	let rec loop_sum i = 
-		if i == n+1 then 0.
-		else let rec loop_mult j =
-			if j == k+1 then 1.
-			else (m(i, j)) *.  (loop_mult(j+1)) in
-		(loop_mult 1) +. (loop_sum(i+1)) in
-	loop_sum 1
-
-
-(* some tests.... 
-let sum : int -> int = fun x->
-	let rec loop i = 
-		if i<=x then i + (loop (i+1)) 
-		else 0 in
-	loop 0
-
-let s0 = sum 10
-let _ = print_endline (string_of_int s0)
-*)
