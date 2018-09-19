@@ -40,6 +40,12 @@ let deleteMin h = match h with
 	            | NODE(_,x,lh,rh) -> merge (lh,rh) 
 
 
+(* debugging for the TEST CASE *)	
+
+let heap1 = NODE (1, 1, NODE (0, 5, EMPTY, EMPTY), NODE (0, 3, EMPTY, EMPTY)) 
+let heap2 = NODE (0, 2, NODE (0, 4, EMPTY, EMPTY), EMPTY) 
+let _ = print_endline(string_of_int(findMin(merge (heap1, heap2))))
+
 (* debugging *)
 let tree = EMPTY
 
