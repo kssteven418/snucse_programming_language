@@ -1,5 +1,6 @@
 
-
+(* 2015-18525 Sehoon Kim *)
+(* exercise 2-4 *)
 
 module type Queue =
 sig
@@ -43,79 +44,38 @@ struct
 				(List.hd (move pri), ([], List.tl (move pri)))
 end
 
-let printList lis = 
-	let rec printRec l =
-		if (List.length l) == 0 then ""
-		else if (List.length l) == 1 then (string_of_int (List.hd l))
-		else (string_of_int (List.hd l)) ^ ";" ^ (printRec (List.tl l)) in
-	"[" ^ (printRec lis) ^ "]"
-	
-
-let toString q = 
-	let (p, s) = q in
-		let rec printQ queue =
-			if (List.length queue) == 0 then ""
-			else if (List.length queue) == 1 
-				then (printList (List.hd queue)) 
-			else "" ^ (printList (List.hd queue)) ^ ";" ^ (printQ (List.tl queue)) ^ ""  in
-		"([" ^ (printQ p) ^ "], [" ^ (printQ s) ^ "])"
-
+(*
 
 let q = IntListQ.emptyQ
-let _ = print_endline (toString q)
 
 let q = IntListQ.enQ(IntListQ.emptyQ, [1;2;3])
-let _ = print_endline (toString q)
-
 
 let q = IntListQ.enQ(q, [4;5])
-let _ = print_endline (toString q)
-
 
 let (n, q) = IntListQ.deQ(q)
-let _ = print_endline (printList n)
-let _ = print_endline (toString q)
 
 let q = IntListQ.enQ(q, [6; 7])
-let _ = print_endline (toString q)
 
 let q = IntListQ.enQ(q, [8; 9])
-let _ = print_endline (toString q)
 
 let q = IntListQ.enQ(q, [10])
-let _ = print_endline (toString q)
 
 let (n, q) = IntListQ.deQ(q)
-let _ = print_endline (printList n)
-let _ = print_endline (toString q)
 
 let (n, q) = IntListQ.deQ(q)
-let _ = print_endline (printList n)
-let _ = print_endline (toString q)
 
 let q = IntListQ.enQ(q, [11;12;13])
-let _ = print_endline (toString q)
 
 let q = IntListQ.enQ(q, [14])
-let _ = print_endline (toString q)
 
 let (n, q) = IntListQ.deQ(q)
-let _ = print_endline (printList n)
-let _ = print_endline (toString q)
 
 let (n, q) = IntListQ.deQ(q)
-let _ = print_endline (printList n)
-let _ = print_endline (toString q)
 
 let (n, q) = IntListQ.deQ(q)
-let _ = print_endline (printList n)
-let _ = print_endline (toString q)
 
 let (n, q) = IntListQ.deQ(q)
-let _ = print_endline (printList n)
-let _ = print_endline (toString q)
 
 let (n, q) = IntListQ.deQ(q)
-let _ = print_endline (printList n)
-let _ = print_endline (toString q)
 
+*)

@@ -24,13 +24,14 @@ let findMin h = match h with
 let rec merge : heap * heap -> heap = fun(lh, rh) ->
 	match lh with 
 	| EMPTY -> rh (* if left heap is EMPTY *)
-	| NODE(l_r, l_v, l_rh, l_lh) ->
+	| NODE(l_r, l_v, l_lh, l_rh) ->
 		(match rh with
 		 | EMPTY -> lh (*if right heap is EMPTY *)
-		 | NODE(r_r, r_v, r_rh, r_lh) ->
+		 | NODE(r_r, r_v, r_lh, r_rh) ->
 			if l_v < r_v then
 				shake (l_v, l_lh, merge (l_rh, rh))
-			else shake (r_v, r_lh, merge (r_rh, lh))
+			else
+				shake (r_v, r_lh, merge (lh, r_rh))
 		)
 
 let insert(x,h) = merge(h, NODE(0,x,EMPTY,EMPTY)) 
@@ -42,49 +43,59 @@ let deleteMin h = match h with
 
 (* debugging for the TEST CASE *)	
 
+(*
 let heap1 = NODE (1, 1, NODE (0, 5, EMPTY, EMPTY), NODE (0, 3, EMPTY, EMPTY)) 
+let heap2 = NODE (1, 2, NODE (0, 4, EMPTY, EMPTY), NODE (0, 6, EMPTY, EMPTY)) 
 let heap2 = NODE (0, 2, NODE (0, 4, EMPTY, EMPTY), EMPTY) 
-let _ = print_endline(string_of_int(findMin(merge (heap1, heap2))))
+*)
 
-(* debugging *)
+(*	
+let heap1 = NODE (1, 1, NODE (1, 6, NODE (0, 10, EMPTY, EMPTY), NODE(0, 8, EMPTY, EMPTY)), NODE (0, 4, NODE(0, 5, EMPTY, EMPTY), EMPTY)) 
+let heap2 = NODE (1, 2, NODE (0, 8, NODE (0, 11, EMPTY, EMPTY), EMPTY), NODE (0, 3, NODE(0, 7, EMPTY, EMPTY), EMPTY)) 
+let tree = merge (heap1, heap2)
+let _ = findMin(merge (heap1, heap2))
+
+let tree = deleteMin tree
+let min = findMin(tree)
+let tree = deleteMin tree
+let min = findMin(tree)
+let tree = deleteMin tree
+let min = findMin(tree)
+let tree = deleteMin tree
+let min = findMin(tree)
+let tree = deleteMin tree
+let min = findMin(tree)
+let tree = deleteMin tree
+let min = findMin(tree)
+let tree = deleteMin tree
+let min = findMin(tree)
+let tree = deleteMin tree
+let min = findMin(tree)
+let tree = deleteMin tree
+let min = findMin(tree)
+let tree = deleteMin tree
+let min = findMin(tree)
+let tree = deleteMin tree
+let min = findMin(tree)
+let tree = deleteMin tree
+let min = findMin(tree)
+*)
+
+(*
 let tree = EMPTY
 
 let tree = insert(1, tree)
-let tree = insert(100, tree)
+let tree = insert(2, tree)
+let tree = insert(4, tree)
+let tree = insert(3, tree)
+let tree = insert(0, tree)
+let tree = insert(6, tree)
 let tree = insert(10, tree)
-let tree = insert(100000, tree)
-let tree = insert(1000, tree)
-let tree = insert(10000, tree)
-let tree = insert(1000000000, tree)
-let tree = insert(1000000, tree)
-let tree = insert(100000, tree)
-let tree = insert(10000000, tree)
-let tree = insert(1000000000, tree)
-let tree = insert(100000000, tree)
-
-let _ = print_endline (string_of_int (findMin tree))
-let tree = deleteMin tree
-let _ = print_endline (string_of_int (findMin tree))
-let tree = deleteMin tree
-let _ = print_endline (string_of_int (findMin tree))
-let tree = deleteMin tree
-let _ = print_endline (string_of_int (findMin tree))
-let tree = deleteMin tree
-let _ = print_endline (string_of_int (findMin tree))
-let tree = deleteMin tree
-let _ = print_endline (string_of_int (findMin tree))
-let tree = deleteMin tree
-let _ = print_endline (string_of_int (findMin tree))
-let tree = deleteMin tree
-let _ = print_endline (string_of_int (findMin tree))
-let tree = deleteMin tree
-let _ = print_endline (string_of_int (findMin tree))
-let tree = deleteMin tree
-let _ = print_endline (string_of_int (findMin tree))
-let tree = deleteMin tree
-let _ = print_endline (string_of_int (findMin tree))
-let tree = deleteMin tree
-let _ = print_endline (string_of_int (findMin tree))
-let tree = deleteMin tree
-let _ = print_endline (string_of_int (findMin tree))
-let tree = deleteMin tree
+let tree = insert(8, tree)
+let tree = insert(7, tree)
+let tree = insert(9, tree)
+let tree = insert(11, tree)
+let tree = insert(12, tree)
+let tree = insert(13, tree)
+let tree = insert(14, tree)
+*)
