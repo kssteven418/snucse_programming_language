@@ -1,0 +1,21 @@
+
+let n := 6 in
+let i := 0 in 
+let sum := 0 in
+(
+while (i < n) do(
+	let temp := 0 in
+	let j := i in
+	while (j < n) do(
+		if(j < 2*i) then(
+			temp := temp + j)
+		else(
+			temp := temp + 1);
+		j := j+1 
+	);
+	sum := sum + temp;
+	i := i+1
+);
+write sum
+
+)

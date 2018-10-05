@@ -327,8 +327,15 @@ struct
 			(* execute e3 if ctrl is false *)
 			else let (v, mem'') = eval mem' env e3 in
 				(v, mem'')
-
-				
+		
+		| WHILE (e1, e2) ->
+			let (ctrl, mem1) = eval mem env e1 in
+			if (value_bool ctrl) then (*if true *)
+				let (v, mem2) = eval mem1 env e2 in (* eval this iteration *)
+				(* next iterations *)
+				let (v, mem3) = eval mem2 env (WHILE(e1, e2)) in
+				(v, mem3)
+			else (ctrl, mem)
 
     | _ -> failwith "Unimplemented" (* TODO : Implement rest of the cases *)
 
