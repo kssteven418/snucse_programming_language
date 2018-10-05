@@ -1,0 +1,18 @@
+(* Public test case 3 *)
+(* <, not  operation *)
+let x := 1 in
+let y := 2 in
+(
+x<y;
+x := 2;
+x<y;
+x := 3;
+x<y;
+
+x := true;
+x := (not x);
+x := (not x);
+
+not y
+
+)

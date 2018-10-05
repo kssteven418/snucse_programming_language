@@ -1,0 +1,15 @@
+(* Public test case 2 *)
+
+let x := 1 in
+let y := 0 in
+
+(read x;
+read y;
+write x;
+write y;
+write x + y;
+write x - y;
+write x * y;
+write x / y)
+
+(* Output : Reads in n and output n+1 *)

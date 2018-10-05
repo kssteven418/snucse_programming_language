@@ -1,0 +1,31 @@
+(* Public test case 3 *)
+(* = operation *)
+let x := true in
+let y := true in
+let z := true in
+(
+x=y;
+x := false;
+x=y;
+y := false;
+x=y;
+x := true;
+x=y;
+
+x := 1;
+y := 1;
+
+x=y;
+x := 2;
+x=y;
+y := 2;
+x=y;
+x := 1;
+x=y;
+
+y = true;
+y=x
+
+)
+
+(* Output : raises Error "TypeError : not int" *)
