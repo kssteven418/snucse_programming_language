@@ -241,6 +241,9 @@ struct
       (v, Mem.store mem' l v)
 	
 		(* TODO *)
+
+		(* basics *)
+
 		| NUM n -> (Num(n), mem)
 		| TRUE -> (Bool(true), mem)
 		| FALSE -> (Bool(false), mem)
@@ -250,15 +253,10 @@ struct
 			let l = lookup_env_loc env x in
 			let v = Mem.load mem l in
 			(v, mem)
+		
+		(* end of basics *)
 
-		| SEQ (e1, e2) ->
-			(* evaluate e1 and then evaluate e2 *)
-			(* environment may not be altered... *)
-		  let (v1, mem') = eval mem env e1 in
-			let (v2, mem'') = eval mem' env e2 in
-			(v2, mem'')
-
-		(* For integer/bool operations, *)
+		(* integer/bool operators *)
 		(* let's assume that e1 and e2 do not alter the memory contents *)
 		
 		| ADD (e1, e2) ->
@@ -300,14 +298,37 @@ struct
 			let (v2, _) = eval mem env e2 in
 			let n1 = value_int v1 in
 			let n2 = value_int v2 in
-			let _ = print_endline (string_of_bool (n1 < n2)) in 
+			(* let _ = print_endline (string_of_bool (n1 < n2)) in *)
 			(Bool(n1 < n2), mem)
 
 		| NOT e ->
 			let (v, _) = eval mem env e in
 			let b = value_bool v in
-			let _ = print_endline (string_of_bool (not b)) in 
+			(* let _ = print_endline (string_of_bool (not b)) in *)
 			(Bool(not b), mem)
+		
+		(* end of integer/bool operators *)
+		
+		(* control opertors *)
+
+		| SEQ (e1, e2) ->
+			(* evaluate e1 and then evaluate e2 *)
+			(* environment may not be altered... *)
+		  let (v1, mem') = eval mem env e1 in
+			let (v2, mem'') = eval mem' env e2 in
+			(v2, mem'')
+		
+		(* if e1 then e2, else e3 *) 
+		| IF (e1, e2, e3) ->
+			let (ctrl, mem') = eval mem env e1 in
+			(* execute e2 if ctrl is true *)
+			if (value_bool ctrl) then let (v, mem'') = eval mem' env e2 in 
+				(v, mem'')
+			(* execute e3 if ctrl is false *)
+			else let (v, mem'') = eval mem' env e3 in
+				(v, mem'')
+
+				
 
     | _ -> failwith "Unimplemented" (* TODO : Implement rest of the cases *)
 
