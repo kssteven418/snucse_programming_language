@@ -1,7 +1,8 @@
 (* Public test case 4 : scope & call by value *)
 
 let x:=1 in
-let proc inc(n) = x := x + n in
+read x;
+let proc inc(n) = (x := x + n; write x) in
 let x:=0 in
 (inc (1); write x)
 

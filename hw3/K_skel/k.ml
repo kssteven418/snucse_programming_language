@@ -227,18 +227,6 @@ struct
       let _ = print_endline (string_of_int n) in
       (v, mem')
 
-    | LETV (x, e1, e2) ->
-      let (v, mem') = eval mem env e1 in (* evaluate e1 -> value v *)
-      let (l, mem'') = Mem.alloc mem' in (* new location l *)
-      eval (Mem.store mem'' l v) (Env.bind env x (Addr l)) e2
-	  (* new memory : store value v at location l *)
-	  (* new env : id x to memotry location l *)
-	  (* then, recursively call eval function with remaining e2 *)
-
-    | ASSIGN (x, e) ->
-      let (v, mem') = eval mem env e in
-      let l = lookup_env_loc env x in
-      (v, Mem.store mem' l v)
 	
 		(* TODO *)
 
@@ -260,86 +248,162 @@ struct
 		(* let's assume that e1 and e2 do not alter the memory contents *)
 		
 		| ADD (e1, e2) ->
-			let (v1, _) = eval mem env e1 in
-			let (v2, _) = eval mem env e2 in
-			(eval_int_op(v1, v2, 0), mem)
+			let (v1, mem1) = eval mem env e1 in
+			let (v2, mem2) = eval mem1 env e2 in
+			(eval_int_op(v1, v2, 0), mem2)
 	
 		| SUB (e1, e2) ->
-			let (v1, _) = eval mem env e1 in
-			let (v2, _) = eval mem env e2 in
-			(eval_int_op(v1, v2, 1), mem)
+			let (v1, mem1) = eval mem env e1 in
+			let (v2, mem2) = eval mem1 env e2 in
+			(eval_int_op(v1, v2, 1), mem2)
 	
 		| MUL (e1, e2) ->
-			let (v1, _) = eval mem env e1 in
-			let (v2, _) = eval mem env e2 in
-			(eval_int_op(v1, v2, 2), mem)
+			let (v1, mem1) = eval mem env e1 in
+			let (v2, mem2) = eval mem1 env e2 in
+			(eval_int_op(v1, v2, 2), mem2)
 	
 		| DIV (e1, e2) ->
-			let (v1, _) = eval mem env e1 in
-			let (v2, _) = eval mem env e2 in
-			(eval_int_op(v1, v2, 3), mem)
+			let (v1, mem1) = eval mem env e1 in
+			let (v2, mem2) = eval mem1 env e2 in
+			(eval_int_op(v1, v2, 3), mem2)
 	
 		| EQUAL (e1, e2) ->
-		  let (v1, _) = eval mem env e1 in
-			let (v2, _) = eval mem env e2 in
+		  let (v1, mem1) = eval mem env e1 in
+			let (v2, mem2) = eval mem1 env e2 in
 			(match v1 with 
 			| Num n1 ->
-				let n2 = value_int v2 in
-				(* let _ = print_endline (string_of_bool (n1 == n2)) in *)
-				(Bool(n1 == n2), mem) (* integer equality *)
+				(match v2 with 
+				 | Num n2 -> 
+				 (*let _ = print_endline (string_of_bool (n1 == n2)) in*)
+				 (Bool(n1 == n2), mem2)
+				 | _ -> 
+				 (*let _ = print_endline (string_of_bool (false)) in*)
+				 (Bool(false), mem2)
+				)
 			| Bool b1 ->
-				let b2 = value_bool v2 in	
-				(* let _ = print_endline (string_of_bool (b1 == b2)) in *)
-				(Bool(b1 == b2), mem) (* boolean equality *)
-			| _ -> raise (Error "TypeError"))
+				(match v2 with
+				 | Bool b2 -> 
+				 (*let _ = print_endline (string_of_bool (b1 == b2)) in*)
+				 (Bool(b1 == b2), mem2)
+				 | _ -> 
+				 (*let _ = print_endline (string_of_bool (false)) in*)
+				 (Bool(false), mem2)
+				)
+			| Unit ->
+				(match v2 with
+				 | Unit -> 
+				 (*let _ = print_endline (string_of_bool (true)) in*)
+				 (Bool(true), mem2)
+				 | _ -> 
+				 (*let _ = print_endline (string_of_bool (false)) in*)
+				 (Bool(false), mem2)
+				)
+			| _ -> 
+			(*let _ = print_endline (string_of_bool (false)) in*)
+			(Bool(false), mem2))
 		
 		| LESS (e1, e2) ->
-			let (v1, _) = eval mem env e1 in
-			let (v2, _) = eval mem env e2 in
+			let (v1, mem1) = eval mem env e1 in
+			let (v2, mem2) = eval mem1 env e2 in
 			let n1 = value_int v1 in
 			let n2 = value_int v2 in
 			(* let _ = print_endline (string_of_bool (n1 < n2)) in *)
-			(Bool(n1 < n2), mem)
+			(Bool(n1 < n2), mem2)
 
 		| NOT e ->
-			let (v, _) = eval mem env e in
+			let (v, mem1) = eval mem env e in
 			let b = value_bool v in
 			(* let _ = print_endline (string_of_bool (not b)) in *)
-			(Bool(not b), mem)
+			(Bool(not b), mem1)
 		
 		(* end of integer/bool operators *)
 		
-		(* control opertors *)
+		(* control operators *)
 
 		| SEQ (e1, e2) ->
 			(* evaluate e1 and then evaluate e2 *)
 			(* environment may not be altered... *)
-		  let (v1, mem') = eval mem env e1 in
-			let (v2, mem'') = eval mem' env e2 in
-			(v2, mem'')
+		  let (v1, mem1) = eval mem env e1 in
+			let (v2, mem2) = eval mem1 env e2 in
+			(v2, mem2)
 		
 		(* if e1 then e2, else e3 *) 
 		| IF (e1, e2, e3) ->
-			let (ctrl, mem') = eval mem env e1 in
+			let (ctrl, mem1) = eval mem env e1 in
 			(* execute e2 if ctrl is true *)
-			if (value_bool ctrl) then let (v, mem'') = eval mem' env e2 in 
-				(v, mem'')
+			if (value_bool ctrl) then let (v, mem2) = eval mem1 env e2 in 
+				(v, mem2)
 			(* execute e3 if ctrl is false *)
-			else let (v, mem'') = eval mem' env e3 in
-				(v, mem'')
+			else let (v, mem2) = eval mem1 env e3 in
+				(v, mem2)
 		
 		| WHILE (e1, e2) ->
 			let (ctrl, mem1) = eval mem env e1 in
 			if (value_bool ctrl) then (*if true *)
-				let (v, mem2) = eval mem1 env e2 in (* eval this iteration *)
+				let (v1, mem2) = eval mem1 env e2 in (* eval this iteration *)
 				(* next iterations *)
-				let (v, mem3) = eval mem2 env (WHILE(e1, e2)) in
-				(v, mem3)
-			else (ctrl, mem)
+				let (v2, mem3) = eval mem2 env (WHILE(e1, e2)) in
+				(v2, mem3)
+			else (Unit, mem)
 
+		(* end of control operators *)
+
+		(* binding *)
+
+    | LETV (x, e1, e2) ->
+      let (v, mem') = eval mem env e1 in (* evaluate e1 -> value v *)
+      let (l, mem'') = Mem.alloc mem' in (* new location l *)
+      eval (Mem.store mem'' l v) (Env.bind env x (Addr l)) e2
+		  (* new memory : store value v at location l *)
+		  (* new env : id x to memotry location l *)
+		  (* then, recursively call eval function with remaining e2 *)
+
+		| LETF (f, x_list, e1, e2) ->
+			let new_env = Env.bind env f (Proc (x_list, e1, env)) in
+			eval mem new_env e2
+
+		(* end of binding *)
+	
+		| CALLV (f, e_list) ->
+			(* inner function : evaluate expression list *)
+			let rec eval_list (env0, mem0, e_list0) =
+				if (List.length e_list0) == 0 then (mem0, [])
+				(* calculate current expression *)
+				else let (v, mem1) = eval mem0 env0 (List.hd e_list0) in 
+					(* recursively calculate next expressions *)
+					let (mem2, v_list) = eval_list(env0, mem1, (List.tl e_list0)) in
+					(mem2, [v]@v_list) in
+
+			(* inner function : bind variable list *)
+			let rec bind_variables (env, mem, x_list, v_list) = 
+				if (List.length x_list) == 0 then (env, mem)
+				else let (l, mem') = Mem.alloc mem in
+					let new_env = (Env.bind env (List.hd x_list) (Addr l)) in (* bind new location to env *)
+					let new_mem = (Mem.store mem' l (List.hd v_list)) in (* store value at the new location *)
+					bind_variables (new_env, new_mem, (List.tl x_list), (List.tl v_list)) in
+
+			(* evaluate e_list and make value list, v_list *)
+			let (mem_n, v_list) = eval_list(env, mem, e_list) in
+			(* find procedure with id f *)
+			(* exp' : function budy, env' : define-time env. *)
+			let (x_list, exp', env') = lookup_env_proc env f in 
+			(* bind variables to the function parameter, x_list and modify env *)
+			let (env_vb, mem_vb) = bind_variables (env', mem_n, x_list, v_list) in
+			(* the bind the function *)
+			let env_fb = Env.bind env_vb f (Proc (x_list, exp', env')) in
+			eval mem_vb env_fb exp' 
+
+    | ASSIGN (x, e) ->
+      let (v, mem') = eval mem env e in
+      let l = lookup_env_loc env x in
+      (v, Mem.store mem' l v)
     | _ -> failwith "Unimplemented" (* TODO : Implement rest of the cases *)
 
   let run (mem, env, pgm) = 
     let (v, _ ) = eval mem env pgm in
     v
+	
+	(* helper functions *)
+
+
 end

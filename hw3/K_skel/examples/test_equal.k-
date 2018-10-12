@@ -23,8 +23,15 @@ x=y;
 x := 1;
 x=y;
 
-y = true;
-y=x
+y := true;
+y=x;
+x=y;
+
+y := ();
+x=y;
+
+x := ();
+x=y
 
 )
 

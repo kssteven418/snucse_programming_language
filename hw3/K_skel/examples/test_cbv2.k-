@@ -1,0 +1,14 @@
+(* Public test case 6 : call by value *)
+
+let proc f (a,b,c) =
+  write a;
+  write b;
+  write c;
+  b := 5;
+  (a * b) + c
+in
+let x := 1 in
+let y := 2 in
+let z := 3 in
+write(f (x+y+z,f(1, 2, 3),x*y*z) + y)
+
