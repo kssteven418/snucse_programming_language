@@ -1,0 +1,19 @@
+(* Public test case 7 : call by reference *)
+let x := 0 in(
+let proc f (a) =
+	(if (a=0) then a := 1
+	 else (
+	 	let y := a in(
+		a := a-1;
+		f<a>;
+		a := y * a;
+		x := x+1))
+	)
+in(
+let x := 10 in(
+let y := 2 in(
+let z := 3 in(
+(write(f <x>);
+ write(x))))))
+;write(x))
+(* Output : prints out "1\n2\n3\n13\n" *)

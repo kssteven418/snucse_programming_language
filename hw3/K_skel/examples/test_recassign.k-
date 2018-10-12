@@ -1,0 +1,10 @@
+(* Public test case 10 : Record *)
+
+let x := {i := 10, j := true} in(
+	x.i := 20;
+	x.j := {i := 100, j := 200};
+	write(x.i);
+	write(x.j.i);
+	write(x.j.j)
+)
+(* Output : prints out "10\n" *)

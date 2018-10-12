@@ -1,0 +1,12 @@
+(* Public test case 10 : Record *)
+let a := 1 in
+let x := {x := {x:=1, y:=2, z:=0}, j := 20, k := 30, b := true} in
+(write (x.j);
+ write (x.k);
+ write (x.x.x);
+ write (x.x.y);
+ write (x.x.z);
+ if(not x.b) then write(x.x.x)
+ else write(x.x.z)
+)
+(* Output : prints out "10\n" *)

@@ -363,7 +363,9 @@ struct
 			eval mem new_env e2
 
 		(* end of binding *)
-	
+
+		(* call by value & ref *)
+
 		| CALLV (f, e_list) ->
 			(* inner function : evaluate expression list *)
 			let rec eval_list (env0, mem0, e_list0) =
@@ -376,7 +378,9 @@ struct
 
 			(* inner function : bind variable list *)
 			let rec bind_variables (env, mem, x_list, v_list) = 
-				if (List.length x_list) == 0 then (env, mem)
+				if not ((List.length x_list) == (List.length v_list)) 
+					then raise (Error "InvalidArg")
+				else if (List.length x_list) == 0 then (env, mem)
 				else let (l, mem') = Mem.alloc mem in
 					let new_env = (Env.bind env (List.hd x_list) (Addr l)) in (* bind new location to env *)
 					let new_mem = (Mem.store mem' l (List.hd v_list)) in (* store value at the new location *)
@@ -393,10 +397,79 @@ struct
 			let env_fb = Env.bind env_vb f (Proc (x_list, exp', env')) in
 			eval mem_vb env_fb exp' 
 
+		| CALLR (f, y_list) ->
+			(* inner function : bind variables *)
+			let rec bind_variables (env0, x_list, y_list) =
+				if not ((List.length x_list) == (List.length y_list)) 
+					then raise (Error "InvalidArg")
+				else if (List.length x_list) == 0 then env0
+				else let l = lookup_env_loc env (List.hd y_list) in (* l = location for yi *)
+					let new_env = (Env.bind env0 (List.hd x_list) (Addr l)) in (* location for xi <- l *)
+					bind_variables (new_env, (List.tl x_list), (List.tl y_list)) in
+
+			(* find procedure with id f *)
+			(* exp' : function budy, env' : define-time env. *)
+			let (x_list, exp', env') = lookup_env_proc env f in 
+			(* bind variables *)
+			let env_vb = bind_variables (env', x_list, y_list) in
+			let env_fb = Env.bind env_vb f (Proc (x_list, exp', env')) in 
+			eval mem env_fb exp'
+	
+		(* end of call by value/reference *)
+
+		(* record *)
+		
+		| RECORD li ->
+		(* li is a list of tuple (id, exp) *)
+		
+			(* inner function : evaluate expressions *)
+			let rec eval_list (mem0, li0) =
+				(* base case *)
+				if (List.length li0) == 0 then (mem0, fun x -> raise (Error "Not_bound"))
+				
+				(* calculate current expression *)
+				else let (v, mem1) = eval mem0 env (snd (List.hd li0)) in 
+					(* allocate memory to store v *)
+					let (l, mem2) = Mem.alloc mem1 in
+					(* store v to the new memory location *)
+					let mem3 = Mem.store mem2 l v in
+					(* record id to bind l (storing value v) *)
+					let id = fst (List.hd li0) in
+					(* recursively calculate next expressions *)
+					let (mem_rec, f_rec) = eval_list(mem3, (List.tl li0)) in
+					(* bind new relation id -> l at the f_rec *)
+					(mem_rec, fun x -> if x=id then l else f_rec x) in
+			
+			let (new_mem, record) = eval_list(mem, li) in
+			(Record(record), new_mem)
+		
+		| FIELD (e, x) ->
+			(* e : record name, x : field name *)
+			let (record, mem') = eval mem env e in
+			let r = value_record record in
+			let loc = r x in
+			let v = Mem.load mem' loc in
+			(v, mem')
+
+		(* end of record *)
+
+		(* assign *)
+	
     | ASSIGN (x, e) ->
       let (v, mem') = eval mem env e in
       let l = lookup_env_loc env x in
       (v, Mem.store mem' l v)
+		
+		| ASSIGNF (e1, x, e2) -> 
+			(* e1 : record expression, x : record field, e2 : exp. to substitute *)
+			let (record, mem1) = eval mem env e1 in
+			let (v, mem2) = eval mem1 env e2 in
+			let r = value_record record in
+			let loc = r x in
+			(v, Mem.store mem2 loc v)
+		
+		(* end of assign *)
+
     | _ -> failwith "Unimplemented" (* TODO : Implement rest of the cases *)
 
   let run (mem, env, pgm) = 
