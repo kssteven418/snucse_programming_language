@@ -1,0 +1,68 @@
+let proc leaf(n) = {l:={empty:=true}, v:=n, r:={empty:=true}, empty:=false} in
+let proc makeLtree(n, l_tree) = {l:=l_tree, v:=n, r:={empty:=true}, empty:=false} in
+let proc makeRtree(n, r_tree) = {l:={empty:=true}, v:=n, r:=r_tree, empty:=false} in
+let proc makeTree(n, l_tree, r_tree) = {l:=l_tree, v:=n, r:=r_tree, empty:=false} in
+
+let proc isEmpty(tree) = tree.empty in
+let proc rTree(tree) = tree.r in
+let proc lTree(tree) = tree.l in
+let proc nodeVal(tree) = tree.v in
+
+let proc dft(tree) = 
+(
+	if (isEmpty(tree)) then ()
+	else ( 
+		write (nodeVal(tree));
+		dft(lTree(tree));
+		dft(rTree(tree));
+		()
+	)
+) in
+
+let proc bft(tree) =
+( 
+	let proc dft(tree, depth, target) =
+	(
+	 	if(isEmpty(tree)) then 0
+		else(
+			if(depth=target) then (write (nodeVal(tree)); 1)
+			else(
+				let left := dft(lTree(tree), depth+1, target) in
+				let right := dft(rTree(tree), depth+1, target) in
+				left+right
+			)
+		)
+	) in
+	let go := 1 in
+	let target := 0 in
+	(
+		while(not(go = 0)) do
+		(
+			go := dft(tree, 0, target);
+			target := target+1
+		)
+	)
+) in
+(* make a tree *)
+let t01 := leaf(9) in
+let t02 := leaf(10) in
+let t03 := leaf(11) in
+let t04 := leaf(12) in
+let t05 := leaf(8) in
+let t11 := makeTree(6, t01, t02) in
+let t12 := makeTree(7, t03, t04) in
+let t13 := makeRtree(4, t05) in
+let t14 := leaf(5) in
+let t21 := makeTree(2, t13, t14) in
+let t22 := makeTree(3, t11, t12) in
+let t31 := makeTree(1, t21, t22) in
+let emptyTree := rTree(t01) in
+(
+	dft(t31);
+ 	write(10000000000001);
+	bft(t31);
+ 	write(10000000000001);
+	dft(t01);
+ 	write(10000000000001);
+	bft(t01)
+)

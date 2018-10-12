@@ -193,14 +193,14 @@ struct
       (match Env.lookup e x with
       | Addr l -> l
       | Proc _ -> raise (Error "TypeError : not addr")) 
-    with Env.Not_bound -> raise (Error "Unbound")
+    with Env.Not_bound -> raise (Error ("Unbound : loc "^x))
 
   let lookup_env_proc e f =
     try
       (match Env.lookup e f with
       | Addr _ -> raise (Error "TypeError : not proc") 
       | Proc (id_list, exp, env) -> (id_list, exp, env))
-    with Env.Not_bound -> raise (Error "Unbound")
+    with Env.Not_bound -> raise (Error ("Unbound : proc "^f))
 
 
   (* sub function : evaluate integer operation *)
@@ -425,7 +425,7 @@ struct
 			(* inner function : evaluate expressions *)
 			let rec eval_list (mem0, li0) =
 				(* base case *)
-				if (List.length li0) == 0 then (mem0, fun x -> raise (Error "Not_bound"))
+				if (List.length li0) == 0 then (mem0, fun x -> raise (Error ("Not_bound : "^x)))
 				
 				(* calculate current expression *)
 				else let (v, mem1) = eval mem0 env (snd (List.hd li0)) in 
