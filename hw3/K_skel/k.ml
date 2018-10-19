@@ -274,32 +274,25 @@ struct
 			| Num n1 ->
 				(match v2 with 
 				 | Num n2 -> 
-				 (*let _ = print_endline (string_of_bool (n1 == n2)) in*)
 				 (Bool(n1 == n2), mem2)
 				 | _ -> 
-				 (*let _ = print_endline (string_of_bool (false)) in*)
 				 (Bool(false), mem2)
 				)
 			| Bool b1 ->
 				(match v2 with
 				 | Bool b2 -> 
-				 (*let _ = print_endline (string_of_bool (b1 == b2)) in*)
 				 (Bool(b1 == b2), mem2)
 				 | _ -> 
-				 (*let _ = print_endline (string_of_bool (false)) in*)
 				 (Bool(false), mem2)
 				)
 			| Unit ->
 				(match v2 with
 				 | Unit -> 
-				 (*let _ = print_endline (string_of_bool (true)) in*)
 				 (Bool(true), mem2)
 				 | _ -> 
-				 (*let _ = print_endline (string_of_bool (false)) in*)
 				 (Bool(false), mem2)
 				)
 			| _ -> 
-			(*let _ = print_endline (string_of_bool (false)) in*)
 			(Bool(false), mem2))
 		
 		| LESS (e1, e2) ->
@@ -307,13 +300,11 @@ struct
 			let (v2, mem2) = eval mem1 env e2 in
 			let n1 = value_int v1 in
 			let n2 = value_int v2 in
-			(* let _ = print_endline (string_of_bool (n1 < n2)) in *)
 			(Bool(n1 < n2), mem2)
 
 		| NOT e ->
 			let (v, mem1) = eval mem env e in
 			let b = value_bool v in
-			(* let _ = print_endline (string_of_bool (not b)) in *)
 			(Bool(not b), mem1)
 		
 		(* end of integer/bool operators *)
@@ -344,7 +335,7 @@ struct
 				(* next iterations *)
 				let (v2, mem3) = eval mem2 env (WHILE(e1, e2)) in
 				(v2, mem3)
-			else (Unit, mem)
+			else (Unit, mem1)
 
 		(* end of control operators *)
 
@@ -425,7 +416,7 @@ struct
 			(* inner function : evaluate expressions *)
 			let rec eval_list (mem0, li0) =
 				(* base case *)
-				if (List.length li0) == 0 then (mem0, fun x -> raise (Error ("Not_bound : "^x)))
+				if (List.length li0) == 0 then (mem0, fun x -> raise (Error ("Unbound : "^x)))
 				
 				(* calculate current expression *)
 				else let (v, mem1) = eval mem0 env (snd (List.hd li0)) in 

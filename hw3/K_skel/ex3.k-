@@ -43,7 +43,9 @@ let proc bft(tree) =
 		)
 	)
 ) in
-(* make a tree *)
+2018
+
+(* make a tree *
 let t01 := leaf(9) in
 let t02 := leaf(10) in
 let t03 := leaf(11) in
@@ -56,6 +58,7 @@ let t14 := leaf(5) in
 let t21 := makeTree(2, t13, t14) in
 let t22 := makeTree(3, t11, t12) in
 let t31 := makeTree(1, t21, t22) in
+
 let emptyTree := rTree(t01) in
 (
 	dft(t31);
@@ -65,4 +68,5 @@ let emptyTree := rTree(t01) in
 	dft(t01);
  	write(10000000000001);
 	bft(t01)
-)
+);
+*)
