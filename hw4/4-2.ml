@@ -15,14 +15,28 @@ type invoke = id * bool
 type edge = id * (id list)
 
 (* debuggin *)
-let rec print_id li =
+let rec str_id_list li =
 	if (List.length li)==0 then ""	
 	else match (List.hd li) with
-	| A -> "A "^(print_id (List.tl li)) 
-	| B -> "B "^(print_id (List.tl li)) 
-	| C -> "C "^(print_id (List.tl li)) 
-	| D -> "D "^(print_id (List.tl li)) 
-	| E -> "E "^(print_id (List.tl li)) 
+	| A -> "A "^(str_id_list (List.tl li)) 
+	| B -> "B "^(str_id_list (List.tl li)) 
+	| C -> "C "^(str_id_list (List.tl li)) 
+	| D -> "D "^(str_id_list (List.tl li)) 
+	| E -> "E "^(str_id_list (List.tl li)) 
+
+let rec str_int_list li = 
+	if (List.length li)==0 then ""	
+	else (string_of_int (List.hd li))^" "^(str_int_list (List.tl li))
+
+(* debuggin : print *)
+
+let print_id_list li =
+	let _ = print_endline(str_id_list li) in ()
+
+let print_int_list li =
+	let _ = print_endline(str_int_list li) in ()
+
+
 
 let id_to_int id = 
 	match id with
@@ -46,6 +60,11 @@ let rec int_to_id_list li =
 	else let head = (List.hd li) in 
 		[int_to_id head]@(int_to_id_list (List.tl li))
 
+let rec id_to_int_list li =
+	if (List.length li)==0 then []
+	else let head = (List.hd li) in 
+		[id_to_int head]@(id_to_int_list (List.tl li))
+
 (* insert value to the list, keeping the order *)
 let rec insert (li, value) =
 	if (List.length li) == 0 then [value]
@@ -53,6 +72,11 @@ let rec insert (li, value) =
 		if value>head then [head]@(insert (List.tl li, value))
 		else if value=head then li
 		else [value]@li
+
+let insert_id (li, id) = 
+	let temp = id_to_int_list li in
+	let temp2 = insert(temp, (id_to_int id)) in
+	int_to_id_list temp2
 
 (* compare two sorted lists *)
 let rec compare (l1, l2) = 
@@ -71,31 +95,80 @@ let rec union (l1, l2) =
 	if(List.length l2)==0 then l1
 	else insert((union (l1, (List.tl l2)), (List.hd l2)))
 
-(* TODO
-let rec eval_condition cond =
-	match cond with 
-	| Items gifts 
-*)
+(* TODO *)
+(* cond : condition list *)
+(* evaluate initset, edgeset *)
+let rec eval_condition_list cond =
+	let rec eval_condition cond = 
+		match cond with 
+		| Items gifts -> (gift_to_int_list gifts, [])
+		| Same id -> ([], [id_to_int id])
+		| Common (c1, c2) ->
+			let (init1, edge1) = eval_condition c1 in
+			let (init2, edge2) = eval_condition c2 in
+			(union(init1, init2), union(edge1, edge2))
+		|Except (c, gl) -> eval_condition c in
+	
+	if (List.length cond)==0 then ([],[])
+	else let (irec, erec) = (eval_condition_list (List.tl cond)) in
+		let (i0, e0) = (eval_condition (List.hd cond)) in
+		(union(i0, irec), union(e0, erec))
+
 
 (* return initial sets, edges(graph), and invoke as functions *)
 let rec initialize req = (* init, edge *)
 	if (List.length req) = 0 
-		then ((fun id -> []), (fun id -> []), (fun id -> false)) 
+		then ((fun id -> raise NoID), 
+				(fun id -> if id=A then []
+				 			else if id=B then []
+							else if id=C then []
+							else if id=D then []
+							else if id=E then []
+							else raise NoID), 
+				(fun id -> raise NoID)) 
 	else let (id0, cond0) = (List.hd req) in
 		(* recursion *)
+		(* init, edge, invoke : ftn *)
 		let (init, edge, invoke) = initialize (List.tl req) in
 		(* and update the current information *)
+		let (init_curr, edge_curr) = eval_condition_list cond0 in
 		
+		(* inner function : make edge function *)
+		(* reverse the direction of edge_curr *)
+		let rec build_edge (ftn, edges) = 
+			if (List.length edges)==0 then ftn
+			else let new_ftn = build_edge (ftn, (List.tl edges)) in 
+			(fun id -> if id=(List.hd edges) then insert_id((new_ftn id), id0) 
+			 			else new_ftn id) in
 
-		((fun id -> if id=id0 then [id0] else init id),
-		 (fun id -> if id=id0 then [id0] else edge id),
-		 invoke) 
+		((fun id -> if id=id0 then init_curr else init id),
+		 (*(fun id -> if id=id0 then int_to_id_list(edge_curr) else edge id),*)
+		 (build_edge (edge, int_to_id_list(edge_curr))),
+		 (fun id -> if id=id0 then true else invoke id)) 
 
 
 
-let req = [(A, []); (B, [])]
+let req = [ 
+  (A, [Common (Common (Same B, Same C), Common (Same D, Same E))]); 
+  (B, [Common (Same C, Common (Same D, Except (Same E, [5]))); 
+   	  Same A; Same C; Items [4; 2; 4]]); 
+  (C, [Same D; Items[7;8]]); 
+  (D, [Except (Same E, [1;2;3])]); 
+  (E, [Items [1;2;3;4;5]]); ]
+ 
+let (init, edge, invoke) = initialize req
 
-let (x, y, z) = initialize req 
+let _ = print_int_list(init A)
+let _ = print_int_list(init B)
+let _ = print_int_list(init C)
+let _ = print_int_list(init D)
+let _ = print_int_list(init E)
+
+let _ = print_id_list(edge A)
+let _ = print_id_list(edge B)
+let _ = print_id_list(edge C)
+let _ = print_id_list(edge D)
+let _ = print_id_list(edge E)
 
 
 (*
