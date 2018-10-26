@@ -17,48 +17,50 @@ type edge = id * (id list)
 
 (*  print functions for debugging *)
 
+let str_id id = 
+	match id with
+	| A -> "A"
+	| B -> "B"
+	| C -> "C"
+	| D -> "D"
+	| E -> "E"
+
 let rec str_id_list li =
 	if (List.length li)==0 then ""	
-	else match (List.hd li) with
-	| A -> "A "^(str_id_list (List.tl li)) 
-	| B -> "B "^(str_id_list (List.tl li)) 
-	| C -> "C "^(str_id_list (List.tl li)) 
-	| D -> "D "^(str_id_list (List.tl li)) 
-	| E -> "E "^(str_id_list (List.tl li)) 
+	else (str_id (List.hd li))^" "^(str_id_list (List.tl li)) 
+
+let print_id_list li =
+	let _ = print_endline(str_id_list li) in ()
 
 let rec str_int_list li = 
 	if (List.length li)==0 then ""	
 	else (string_of_int (List.hd li))^" "^(str_int_list (List.tl li))
 
-let print_id_list li =
-	let _ = print_endline(str_id_list li) in ()
-
 let print_int_list li =
 	let _ = print_endline(str_int_list li) in ()
 
+let str_result li = 
+	let rec content li = 
+		if (List.length li)==0 then ""
+		else let (id, temp) = List.hd li in
+			"("^(str_id id)^"["^(str_int_list temp)^"]"^") "^ (content (List.tl li)) in
+	"["^(content li)^"]"
+
 let rec print_result li =
-	if (List.length li)==0 then
-		let _ = print_endline("*") in
-		()
-	else let (id, temp) = List.hd li in
-		let _ = print_id_list [id] in
-		let _ = print_int_list temp in
-		print_result (List.tl li)
+	let _ = print_endline(str_result li) in ()
 
 let print_set set =
-	let _ = Printf.printf "A " in
+	let _ = Printf.printf "A : " in
 	let _ = print_int_list (set A) in
-	let _ = Printf.printf "B " in
+	let _ = Printf.printf "B : " in
 	let _ = print_int_list (set B) in
-	let _ = Printf.printf "C " in
+	let _ = Printf.printf "C : " in
 	let _ = print_int_list (set C) in
-	let _ = Printf.printf "D " in
+	let _ = Printf.printf "D : " in
 	let _ = print_int_list (set D) in
-	let _ = Printf.printf "E " in
+	let _ = Printf.printf "E : " in
 	let _ = print_int_list (set E) in
-	let _ = print_endline("*") in
-	let _ = print_endline("") in
-	()
+	let _ = print_endline("") in ()
 
 let print_to_invoke invoke =
 	let _ = Printf.printf("to invoke : ") in
@@ -66,8 +68,7 @@ let print_to_invoke invoke =
 		if invoke id then (str_id_list [id])^" " else "" in
 	let temp = (print invoke A)^(print invoke B)^(print invoke C)
 				^(print invoke D)^(print invoke E) in
-	let _ = print_endline temp in
-	()
+	let _ = print_endline temp in ()
 
 (* end of print functions *)
 
@@ -109,9 +110,11 @@ let rec insert (li, value) =
 	if (List.length li) == 0 then [value]
 	else let head = (List.hd li) in
 		if value>head then [head]@(insert (List.tl li, value))
-		else if value=head then li
+		else if value=head then li (* no duplication *)
 		else [value]@li
 
+(* insert id to the id list, keeping the order, no duplication allowed *)
+(* by traslating into int list *)
 let insert_id (li, id) = 
 	let temp = id_to_int_list li in
 	let temp2 = insert(temp, (id_to_int id)) in
@@ -119,20 +122,23 @@ let insert_id (li, id) =
 
 (* compare two sorted lists *)
 let rec compare (l1, l2) = 
-	if(List.length l1) != (List.length l2) then false
-	else if (List.length l1) == 0 then true
-	else if (List.hd l1) != (List.hd l2) then false
-	else compare((List.tl l1), (List.tl l2))
+	if(List.length l1) != (List.length l2) then false (* length mismatch *)
+	else if (List.length l1) == 0 then true (* both are empty list *)
+	else if (List.hd l1) != (List.hd l2) then false (* first elmt different *)
+	else compare((List.tl l1), (List.tl l2)) (* first elmt same, then compare the tails *)
 
 (* convert gift list to sorted int list *)
 (* sort and remove redundancies *)
 let rec gift_to_int_list gifts = 
 	if (List.length gifts) = 0 then []
+	(* this is done by inserting gift into the list one at a time *)
+	(* use the insert function *)
 	else insert((gift_to_int_list (List.tl gifts)), (List.hd gifts))
 
 (* union two sorted lists *)
 let rec union (l1, l2) =
 	if(List.length l2)==0 then l1
+	(* insert l2.head to the union of l1 and l2.tail *)
 	else insert((union (l1, (List.tl l2)), (List.hd l2)))
 
 (* intersection of two sorted list *)
@@ -158,7 +164,7 @@ let rec except(l1, l2) =
 (**************** MAIN PROCEDURES ******************)
 
 (* cond : condition list *)
-(* initiate initset, edgeset *)
+(* initiate edge set *)
 let rec init_condition_list cond =
 	(* inner fuction to evaluate one condition *)
 	let rec init_condition cond = 
@@ -179,7 +185,8 @@ let rec init_condition_list cond =
 
 
 (* return initial sets, edges(graph), and invoke as functions *)
-let rec initialize req = (* init, edge *)
+(* req is a list of (ID, conditions list) *)
+let rec initialize req = 
 	if (List.length req) = 0 
 		then ((fun id -> if id=A then [] (* initial set *)
 				 			else if id=B then []
@@ -193,15 +200,15 @@ let rec initialize req = (* init, edge *)
 							else if id=D then []
 							else if id=E then []
 							else raise NoID), 
-				(fun id -> if id=A then false (* invoke *)
-				 			else if id=B then false 
-							else if id=C then false
-							else if id=D then false
-							else if id=E then false
+				(fun id -> if id=A then true (* invoke *)
+				 			else if id=B then true 
+							else if id=C then true
+							else if id=D then true
+							else if id=E then true
 							else raise NoID))
 	else let (id0, cond0) = (List.hd req) in
 		(* recursion *)
-		(* init, edge, invoke : ftn *)
+		(* init, edge, invoke : functions *)
 		let (init, edge, invoke) = initialize (List.tl req) in
 		(* and update the current information *)
 		let edge_curr = init_condition_list cond0 in
@@ -211,6 +218,8 @@ let rec initialize req = (* init, edge *)
 		let rec build_edge (ftn, edges) = 
 			if (List.length edges)==0 then ftn
 			else let new_ftn = build_edge (ftn, (List.tl edges)) in 
+			(*  edge_curr : id0 -> edges *)
+			(* need to reverse : edges -> id0 *) 
 			(fun id -> if id=(List.hd edges) then insert_id((new_ftn id), id0) 
 			 			else new_ftn id) in
 
@@ -220,6 +229,7 @@ let rec initialize req = (* init, edge *)
 
 
 (* evaluate condition list based on set of other ids *)
+(* set is current gift set for all ids *)
 let rec eval_condition_list (cond, set) =
 	(* inner fuction to evaluate one condition *)
 	let rec eval_condition (cond, set)  =
@@ -232,7 +242,7 @@ let rec eval_condition_list (cond, set) =
 			intersection(s1, s2)
 		| Except (c, gl) ->
 			let s1 = eval_condition (c, set) in
-			let s2 = gift_to_int_list gl in
+			let s2 = gift_to_int_list gl in (* sort and remove duplicate *)
 			except(s1, s2) in
 
 	(* then union all conditions in the list *) 	
@@ -250,7 +260,9 @@ let eval_new_set (cond, id, set, edge, invoke) =
 	let invoke_disable_id = (fun x -> if x=id then false else invoke x) in
 	let new_set = eval_condition_list(cond, set) in
 
+
 	(* if new set equals old set, then no change, do nothing *)
+	(* only return new invoke function *)
 	if compare(old_set, new_set) then (set, invoke_disable_id)
 
 	(* else, update set and invoke *)
@@ -293,10 +305,11 @@ let shoppingList req =
 	
 	let req_ftn = req_ftn_build req in
 	
-	(* initiattion phase *)
+	(* initiation phase *)
 	let (set, edge, invoke) = initialize req in
 	(* inner function to ennumerate *)
 	let rec ennumerate (set, edge, invoke)=
+		(* find id to invoke *)
 		let (go, id) = id_to_invoke invoke in
 		if not go then set (* all done, return the input set as the final result *)
 		else let cond = req_ftn id in (* condition list of the id *) 
@@ -310,35 +323,137 @@ let shoppingList req =
 			ennumerate (set_update, edge, invoke_update) in
 		
 	let final_set = ennumerate(set, edge, invoke) in	
-	(*
-	let _ = print_int_list(final_set A) in
-	let _ = print_int_list(final_set B) in
-	let _ = print_int_list(final_set C) in
-	let _ = print_int_list(final_set D) in
-	let _ = print_int_list(final_set E) in
-	let _ = print_endline("*") in
-	let _ = print_id_list(edge A) in
-	let _ = print_id_list(edge B) in
-	let _ = print_id_list(edge C) in
-	let _ = print_id_list(edge D) in
-	let _ = print_id_list(edge E) in
-	*)
 	
 	[(A, final_set A);(B, final_set B);(C, final_set C);(D, final_set D);(E, final_set E)]
 
 
 
-(*
-let req = [ 
-(A, [Items [1;2;3;1;2;3]]); 
-(D, [Items [5;5;5;5;5]]); 
-(A, [Same D]); 
-(E, [Except (Items [1;2;3;1;2;3], [1;2;3])]); 
-(A, [Items [1;2;3;4]]); 
-]let x = shoppingList req
 
- let _ = print_result(x)
- *)
+(* DEBUGGING 3 *)
+(*
+let test (c, a, num) = 
+	let result = (shoppingList c) in
+	let _ = if (result = a) 
+		then print_endline ((string_of_int num) ^ " accepted ")
+		else print_endline ((string_of_int num)^" failed\n"
+							^(str_result a)^"\n"^(str_result result)) in ()
+
+let check1 = [(A, [Items[1;2;3]]); (B, [Same C; Same D]); (C, [Except(Same A, [2])]); (D, [Except(Common(Same A, Same B),[3])]); (E, [])]
+let check2 = [(A, [Items[1;4;3]]);(B, [Except(Same A, [4;3;1]);Same C]);(C, [Same B;Same D]);(D, []);(E, [])]
+let check3 = [(A, [Items[1;4;3]]);(B, [Except(Same A, [4;3;1]);Same C]);(C, [Same B;Same D]);(D, [Items[7]]);(E, [])]
+let check4 = [(A, [Same B]);(B, [Same C]);(C, [Same A]);(D,[Same A;Same E]);(E,[Same D])]
+let check5 = [(A, [Items[1;2;3];Same D]);
+			  (B, [Same A; Items[5]]);
+			  (C, [Common(Common(Except(Same E, [1;2]),Same A),Same B)]);
+			  (D, [Except(Same A, [3]);Same C]);
+			  (E, [Items[1;2;3;4];Common(Same B, Same C)])]
+
+let check6 = [(A, [Items[3;2;1];Same D]);
+			  (B, [Except(Same C, [1]);Except(Same A, [1])]);
+			  (C, [Common(Same A, Same D)]);
+			  (D, [Items[4;5];Common(Same A, Same B)]);
+			  (E, [Common(Same A, Same B);Same C])]
+let check7 = [(A, [Except(Same E, [1;3])]);
+			  (B, [Items[1;5;6];Common(Same A, Same C)]);
+			  (C, [Items[1;2;3;4]]);
+			  (D, [Common(Same A, Except(Same C, [3;4]))]);
+			  (E, [Common(Same A, Same B);Common(Same D, Same C)])]
+let check8 = [(A, [Common(Same B, Same C);Same E]);
+			  (B, [Items[1;5;6];Common(Same A, Same C)]);
+			  (C, [Items[1;2;3;4]]);
+			  (D, [Common(Same A, Except(Same C, [3;4]))]);
+			  (E, [Common(Same C, Common(Same A, Same B));Common(Same D, Same C)])]
+
+let answer1 = [(A,[1;2;3]);(B,[1;3]);(C,[1;3]);(D,[1]);(E,[])]  
+let answer2 = [(A,[1;3;4]);(B,[]);(C,[]);(D,[]);(E,[])]  
+let answer3 = [(A,[1;3;4]);(B,[7]);(C,[7]);(D,[7]);(E,[])]  
+let answer4 = [(A,[]);(B,[]);(C,[]);(D,[]);(E,[])]
+let answer5 = [(A,[1;2;3]);(B,[1;2;3;5]);(C,[3]);(D,[1;2;3]);(E,[1;2;3;4])]
+let answer6 = [(A,[1;2;3;4;5]);(B,[2;3;4;5]);(C,[2;3;4;5]);(D,[2;3;4;5]);(E,[2;3;4;5])]
+let answer7 = [(A,[]);(B,[1;5;6]);(C,[1;2;3;4]);(D,[]);(E,[])]
+let answer8 = [(A,[1]);(B,[1;5;6]);(C,[1;2;3;4]);(D,[1]);(E,[1])]
+
+let _ = test (check1, answer1, 1)
+let _ = test (check2, answer2, 2)
+let _ = test (check3, answer3, 3)
+let _ = test (check4, answer4, 4)
+let _ = test (check5, answer5, 5)
+let _ = test (check6, answer6, 6)
+let _ = test (check7, answer7, 7)
+let _ = test (check8, answer8, 8)
+let _ = print_result(shoppingList(check8))
+*)
+
+
+(* DEBUGGING 2 *)
+(*
+let idtest (h) = 
+    match h with 
+	(id, gift) -> 
+	match id with 
+	| A -> "A" 
+    | B -> "B" 
+    | C -> "C" 
+    | D -> "D" 
+    | E -> "E" 
+
+let gifttest (h) = 
+    match h with 
+    | (id, gift) -> gift 
+	let rec printlisttest (gift) = 
+    match gift with 
+    | [] -> "]" 
+    | h::t -> (string_of_int h) ^ printlisttest(t) 
+
+let rec printfinaltest (result) = 
+	    match result with 
+	    | [] -> () 
+	    | h::t -> print_string ("(" ^ idtest(h) ^ ",[" ^ printlisttest(gifttest(h)) ^");") 
+		    
+let check1 = [(A, Items[1;2]::[]); (B, []); (C, []); (D, []); (E, [])] 
+let check2 = [(A, Items[1;2]::Items[3;4]::[]); (B, []); (C, []); (D, []); (E, [])] 
+let check3 = [(A,Items[1;2]::Items[1;4]::[]);(C,Items[3;4]::[]); (B, []); (D, []); (E, [])] 
+let check4 = [(A,Items[1;2]::Items[1;4]::[]);(B, Same A::[]);(C,Items[3;4]::[]); (D, []); (E, [])] 
+let check5 = [(A,Items[1;2]::Items[1;4]::[]);(B, Same C::[]);(C,Items[3;4]::[]); (D, []); (E, [])] 
+let check6 = [(A,Same B::[]);(B, Same C::[]);(C, Same D::[]);(D, Same E::[]);(E, Same A::[])] 
+let check7 = [(A, Items [1;2;3]::[]); (B,Same A::Items [4]::[]); (C, []); (D, []); (E, [Same D])] 
+
+let check8 = [(A, [Items[1;2]]); (B, [Same A]); (C, []); (D, []); (E, [])] 
+let check9 = [(A, [Items[1;2]]); (B, [Same C]);(C, [Items[2;3]]); (D, []); (E, [])] 
+let check10 = [(A, [Items[1;2]]); (B, [Items[4];Same C]);(C, [Items[2;3]]); (D, []); (E, [])] 
+let check11 = [(A, [Items[1;2]]); (B, [Same C;Items[4]]);(C, [Items[2;3]]); (D, []); (E, [])] 
+let check12 = [(A, [Items[1;2]; Same C]); (B, [Same A]);(C, [Items[2;3]]); (D, []); (E, [])] 
+let check13 = [(A, [Except (Items[1;2;3], [1;2])]); (B, []); (C, []); (D, []); (E, [])] 
+let check14 = [(A, [Items[1;2;3]]);(B, [Except (Same A, [1])]); (C, []); (D, []); (E, [])] 
+let check15 = [(A, [Common (Items[1;2], Items[2;3])]); (B, []); (C, []); (D, []); (E, [])] 
+let check16 = [(A, [Items [5;6]; Common(Items [1;2], Items [2;3])]); (B, []); (C, []); (D, []); (E, [])] 
+let check17 = [(A, [Items[1;2;3;4;5]]);(B,[Same D]); (C,[Common (Common (Except (Items [1;2;3;4;5], [3;4]), Same B), Same A)]);(D, [Items [1;3;5;7;9]]); (E, [])] 
+
+let x = shoppingList(check17) 
+let _ = print_result x
+let _ = print_result ([(A,[1;2;3;4;5]);(B,[1;3;5;7;9]);(C,[1;5]);(D,[1;3;5;7;9]);(E,[])])
+let _ = 
+if (shoppingList (check1) = [(A,[1;2]);(B,[]);(C,[]);(D,[]);(E,[])])          then print_endline("1") else printfinaltest(shoppingList(check1)); 
+if (shoppingList (check2) = [(A,[1;2;3;4]);(B,[]);(C,[]);(D,[]);(E,[])])       then print_endline("2") else printfinaltest(shoppingList(check2)); 
+if (shoppingList (check3) = [(A,[1;2;4]);(B,[]);(C,[3;4]);(D,[]);(E,[])])       then print_endline("3") else printfinaltest(shoppingList(check3)); 
+if (shoppingList (check4) = [(A,[1;2;4]);(B,[1;2;4]);(C,[3;4]);(D,[]);(E,[])])    then print_endline("4") else printfinaltest(shoppingList(check4)); 
+if (shoppingList (check5) = [(A,[1;2;4]);(B,[3;4]);(C,[3;4]);(D,[]);(E,[])])    then print_endline("5") else printfinaltest(shoppingList(check5)); 
+if (shoppingList (check6) = [(A,[]);(B,[]);(C,[]);(D,[]);(E,[])])             then print_endline("6") else printfinaltest(shoppingList(check6)); 
+if (shoppingList (check7) = [(A,[1;2;3]);(B,[1;2;3;4]);(C,[]);(D,[]);(E,[])])   then print_endline("7") else printfinaltest(shoppingList(check7)); 
+if (shoppingList (check8) = [(A,[1;2]);(B,[1;2]);(C,[]);(D,[]);(E,[])])       then print_endline("8") else printfinaltest(shoppingList(check8)); 
+if (shoppingList (check9) = [(A,[1;2]);(B,[2;3]);(C,[2;3]);(D,[]);(E,[])])       then print_endline("9") else printfinaltest(shoppingList(check9)); 
+if (shoppingList (check10) = [(A,[1;2]);(B,[2;3;4]);(C,[2;3]);(D,[]);(E,[])])    then print_endline("10") else printfinaltest(shoppingList(check10)); 
+if (shoppingList (check11) = [(A,[1;2]);(B,[2;3;4]);(C,[2;3]);(D,[]);(E,[])])    then print_endline("11") else printfinaltest(shoppingList(check11)); 
+if (shoppingList (check12) = [(A,[1;2;3]);(B,[1;2;3]);(C,[2;3]);(D,[]);(E,[])]) then print_endline("12") else printfinaltest(shoppingList(check12)); 
+if (shoppingList (check13) = [(A,[3]);(B,[]);(C,[]);(D,[]);(E,[])])          then print_endline("13") else printfinaltest(shoppingList(check13)); 
+if (shoppingList (check14) = [(A,[1;2;3]);(B,[2;3]);(C,[]);(D,[]);(E,[])])       then print_endline("14") else printfinaltest(shoppingList(check14)); 
+if (shoppingList (check15) = [(A,[2]);(B,[]);(C,[]);(D,[]);(E,[])])          then print_endline("15") else printfinaltest(shoppingList(check15)); 
+if (shoppingList (check16) = [(A,[2;5;6]);(B,[]);(C,[]);(D,[]);(E,[])])       then print_endline("16") else printfinaltest(shoppingList(check16)); 
+if (shoppingList (check17) = [(A,[1;2;3;4;5]);(B,[1;3;5;7;9]);(C,[1;5]);(D,[1;3;5;7;9]);(E,[])]) then print_endline("17") else printfinaltest(shoppingList(check17)); 
+*)
+
+(* DEBUGGING *)
+(*
 let _ = 
 let emptyL = [(A, []); (B, []); (C, []); (D, []); (E, [])] in 
 
@@ -429,44 +544,5 @@ assert ((shoppingList [
 			]) = [(A, [1; 2; 3; 4; 5]); (B, []); (C, []); (D, [5]); (E, [])]); 
 
 print_endline "pass all tests"; 
-
-(*
-*)
-(*
-let x = [1; 4; 5]
-let x = insert(x, 4)
-let y = [2; 4; 5; 6]
-let z = union(x, y)
-*)
-(*
-let x = []
-let x = insert (x, 3)
-let x = insert (x, 5)
-let x = insert (x, 1)
-let x = insert (x, 6)
-let x = insert (x, 4)
-let x = insert (x, 2)
-let x = insert (x, 0)
-
-let y1 = [0;1;2;3;4;5;6]
-let y2 = [0;1;3;3;4;5;6]
-let y3 = [0;1;2;3;4;5;6;7]
-let y4 = [0;1;2;3;4;5]
-let y5 = [0;1;2;3;4;5;10]
-let y6 = [1;1;2;3;4;5;6]
-
-let _ = print_endline(string_of_bool (compare(x, y1)))
-let _ = print_endline(string_of_bool (compare(x, y2)))
-let _ = print_endline(string_of_bool (compare(x, y3)))
-let _ = print_endline(string_of_bool (compare(x, y4)))
-let _ = print_endline(string_of_bool (compare(x, y5)))
-let _ = print_endline(string_of_bool (compare(x, y6)))
 *)
 
-
-
-(*let li = x A
-
-let test = [A; B; C]
-let _ = print_endline (print_id li)
-*)
