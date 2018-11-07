@@ -84,7 +84,18 @@ module Translator = struct
 	(* CONTROL STATEMENTS *)
 	| K.SEQ (e1, e2) -> trans e1 @ trans e2
 	| K.IF (ctrl, et, ef) -> trans ctrl @ [Sm5.JTR(trans et, trans ef)]
-	| K.WHILE (e1, e2) -> []
+
+	| K.WHILE (ctrl, e) -> 
+		let ftnbody = K.IF(ctrl, K.SEQ(e, K.CALLV("f#", K.UNIT)), K.UNIT) in
+		let whilefun = K.LETF("f#", "v#", ftnbody, K.CALLV("f#", K.UNIT)) in
+		trans whilefun
+
+	| K.FOR (x, el, eh, e) -> 
+		let ctrl = K.NOT(K.LESS(K.VAR("n2#"), K.VAR(x))) in
+		let body = K.SEQ(e, K.ASSIGN(x, K.ADD(K.VAR(x), K.NUM 1))) in
+		let forfun = K.LETV("n2#", eh, 
+				K.SEQ(K.ASSIGN (x, el), K.WHILE(ctrl, body))) in
+		trans forfun
 
 	(* LET STATEMENTS *)
     | K.LETV (x, e1, e2) ->
