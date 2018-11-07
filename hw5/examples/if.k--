@@ -1,0 +1,20 @@
+(* Public test case 1 *)
+
+let x := 2 in
+let y := 4 in
+if (x<y) then write 1 else write 0;
+if (y<x) then write 1 else write 0;
+if (x=y) then write 1 else write 0;
+y:=2;
+if (x=y) then write 1 else write 0;
+x:=true;
+if (x=y) then write 1 else write 0;
+y:=true;
+if (x=y) then write 1 else write 0;
+y:=false;
+if (x=y) then write 1 else write 0;
+x:=false;
+if (x=y) then write 1 else write 0
+
+
+(* Output : prints out "3\n" *)

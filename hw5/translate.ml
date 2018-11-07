@@ -77,13 +77,39 @@ module Translator = struct
 	| K.EQUAL (e1, e2) -> trans e1 @ trans e2 @ [Sm5.EQ]
 	| K.LESS (e1, e2) -> trans e1 @ trans e2 @ [Sm5.LESS]
 	| K.NOT e -> trans e @ [Sm5.NOT]
+	
+	(* ASSIGN OPERATOR *)
+	| K.ASSIGN (x, e) -> trans e @ [Sm5.PUSH (Sm5.Id x); Sm5.STORE]
 
 	(* CONTROL STATEMENTS *)
-	| SEQ (e1, e2) -> trans e1 @ trans e2
+	| K.SEQ (e1, e2) -> trans e1 @ trans e2
+	| K.IF (ctrl, et, ef) -> trans ctrl @ [Sm5.JTR(trans et, trans ef)]
+	| K.WHILE (e1, e2) -> []
 
+	(* LET STATEMENTS *)
     | K.LETV (x, e1, e2) ->
-      trans e1 @ [Sm5.MALLOC; Sm5.BIND x; Sm5.PUSH (Sm5.Id x); Sm5.STORE] @
-      trans e2 @ [Sm5.UNBIND; Sm5.POP]
+    	trans e1 @ [Sm5.MALLOC; Sm5.BIND x; Sm5.PUSH (Sm5.Id x); Sm5.STORE] @
+    	trans e2 @ [Sm5.UNBIND; Sm5.POP]
+	
+	| K.LETF (f, x, e1, e2) -> (* e1 : ftn body *)
+		[Sm5.PUSH (Sm5.Fn(x, [Sm5.BIND f] @ trans e1)); 
+		(* then stack top : (x, [bind, e1], Env) *)
+		(* the function to bind to id f will be provided by call function *)
+		Sm5.BIND f] @ trans e2 @
+		[Sm5.UNBIND; Sm5.POP]
+
+	(* CALL STATEMENTS *)
+	
+	| K.CALLV (f, e) -> [Sm5.PUSH (Sm5.Id f)] @ 
+		(* it will bind with the id f in the function definition*)
+		[Sm5.PUSH (Sm5.Id f)] @ trans e @ [Sm5.MALLOC; Sm5.CALL]
+
+	| K.CALLR (f, x) -> [Sm5.PUSH (Sm5.Id f)] @
+		(* it will bind with the id f in the function definition*)
+		[Sm5.PUSH (Sm5.Id f) ; (* push function *)
+		Sm5.PUSH (Sm5.Id x); Sm5.LOAD; (* push value of the location x *)
+		Sm5.PUSH (Sm5.Id x); (* push location x *)
+		Sm5.CALL] (* will overwrite the location x with its original value *)
 
 	(* INPUT OUTPUT *)
     | K.READ x -> [Sm5.GET; Sm5.PUSH (Sm5.Id x); Sm5.STORE; Sm5.PUSH (Sm5.Id x); Sm5.LOAD]

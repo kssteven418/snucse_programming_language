@@ -5,6 +5,12 @@ let y := 2 in
 write x + y;
 write x - y;
 write x * y;
+write x / y;
+y := 4;
+write x + y;
+write x - y;
+write x * y;
 write x / y
+
 
 (* Output : prints out "3\n" *)

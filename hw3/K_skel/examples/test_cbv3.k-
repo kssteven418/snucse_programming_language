@@ -1,0 +1,7 @@
+let x:=1 in
+let proc inc(n) = (x := x + n; write x) in
+let x:=0 in
+(inc (1); write x;
+x := 10; 
+ inc(2); write x)
+
