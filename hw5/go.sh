@@ -1,5 +1,5 @@
 #!/bin/bash
 
 FILENAME=$1
-FILEPATH="./examples/test_$FILENAME.k-"
+FILEPATH="./examples/$FILENAME.k--"
 ./run $FILEPATH

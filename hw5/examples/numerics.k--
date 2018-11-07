@@ -1,0 +1,10 @@
+(* Public test case 1 *)
+
+let x := 4 in
+let y := 2 in
+write x + y;
+write x - y;
+write x * y;
+write x / y
+
+(* Output : prints out "3\n" *)

@@ -1,0 +1,13 @@
+(* Public test case 1 *)
+
+let x := 1 in
+let y := 2 in
+let z := true in
+let w := 1 in
+write x<y;
+write y<x;
+write x=z;
+write x=w;
+write x<y
+
+(* Output : prints out "3\n" *)
