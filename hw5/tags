@@ -1,0 +1,344 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+*	k.ml	/^  let rec eval : memory -> env -> exp -> (value * memory) = fun mem env e ->$/;"	f	Module:K
+ADD	k.ml	/^  | ADD of exp * exp$/;"	C	type:K/exp
+ADD	k.ml	/^  | ADD of exp * exp$/;"	C	type:KMINUS/exp
+ADD	sm5.ml	/^    | ADD $/;"	C	type:SM5/cmd
+ADD	sm5.ml	/^    | ADD $/;"	C	type:Sm5/cmd
+ASSIGN	k.ml	/^  | ASSIGN of id * exp          (* assgin to variable *)$/;"	C	type:K/exp
+ASSIGN	k.ml	/^  | ASSIGN of id * exp          (* assgin to variable *)$/;"	C	type:KMINUS/exp
+Addr	k.ml	/^  and  env_entry = Addr of Loc.t | Proc of id * exp * env$/;"	C	type:K/env_entry
+BIND	sm5.ml	/^    | BIND of string $/;"	C	type:SM5/cmd
+BIND	sm5.ml	/^    | BIND of string $/;"	C	type:Sm5/cmd
+BOX	sm5.ml	/^    | BOX of int $/;"	C	type:SM5/cmd
+BOX	sm5.ml	/^    | BOX of int $/;"	C	type:Sm5/cmd
+CALL	sm5.ml	/^    | CALL $/;"	C	type:SM5/cmd
+CALL	sm5.ml	/^    | CALL $/;"	C	type:Sm5/cmd
+CALLR	k.ml	/^  | CALLR of id * id            (* call by referenece *)$/;"	C	type:K/exp
+CALLR	k.ml	/^  | CALLR of id * id            (* call by referenece *)$/;"	C	type:KMINUS/exp
+CALLV	k.ml	/^  | CALLV of id * exp           (* call by value *)$/;"	C	type:K/exp
+CALLV	k.ml	/^  | CALLV of id * exp           (* call by value *)$/;"	C	type:KMINUS/exp
+COLONEQ	parser.ml	/^  | COLONEQ$/;"	C	type:token
+COLONEQ	parser.mli	/^  | COLONEQ$/;"	C	type:token
+DIV	k.ml	/^  | DIV of exp * exp$/;"	C	type:K/exp
+DIV	k.ml	/^  | DIV of exp * exp$/;"	C	type:KMINUS/exp
+DIV	sm5.ml	/^    | DIV $/;"	C	type:Sm5/cmd
+DIV	sm5.ml	/^    | DIV$/;"	C	type:SM5/cmd
+DO	parser.ml	/^  | DO$/;"	C	type:token
+DO	parser.mli	/^  | DO$/;"	C	type:token
+E	k.ml	/^  type ('a, 'b) t = E of ('a -> 'b)$/;"	C	type:Env/t
+ELSE	parser.ml	/^  | ELSE$/;"	C	type:token
+ELSE	parser.mli	/^  | ELSE$/;"	C	type:token
+END	parser.ml	/^  | END$/;"	C	type:token
+END	parser.mli	/^  | END$/;"	C	type:token
+ENV	k.ml	1;"	M
+EOF	parser.ml	/^  | EOF$/;"	C	type:token
+EOF	parser.mli	/^  | EOF$/;"	C	type:token
+EQ	sm5.ml	/^    | EQ $/;"	C	type:Sm5/cmd
+EQ	sm5.ml	/^    | EQ$/;"	C	type:SM5/cmd
+EQUAL	k.ml	/^  | EQUAL of exp * exp$/;"	C	type:K/exp
+EQUAL	k.ml	/^  | EQUAL of exp * exp$/;"	C	type:KMINUS/exp
+EQUAL	parser.ml	/^  | EQUAL$/;"	C	type:token
+EQUAL	parser.mli	/^  | EQUAL$/;"	C	type:token
+Env	k.ml	1;"	M
+Eof	lexer.ml	/^ exception Eof$/;"	e
+Error	k.ml	/^  exception Error of string$/;"	e	Module:K
+Error	k.ml	/^  exception Error of string$/;"	e	Module:KMINUS
+Error	sm5.ml	/^  exception Error of string$/;"	e
+FALSE	k.ml	/^  | NUM of int | TRUE | FALSE | UNIT$/;"	C	type:K/exp
+FALSE	k.ml	/^  | NUM of int | TRUE | FALSE | UNIT$/;"	C	type:KMINUS/exp
+FALSE	parser.ml	/^  | FALSE$/;"	C	type:token
+FALSE	parser.mli	/^  | FALSE$/;"	C	type:token
+FOR	k.ml	/^  | FOR of id * exp * exp * exp (* for loop *)$/;"	C	type:K/exp
+FOR	k.ml	/^  | FOR of id * exp * exp * exp (* for loop *)$/;"	C	type:KMINUS/exp
+FOR	parser.ml	/^  | FOR$/;"	C	type:token
+FOR	parser.mli	/^  | FOR$/;"	C	type:token
+Fun	parser.ml	/^             | Fun of string * string * K.K.exp$/;"	C	type:declLet
+GC_Failure	sm5.ml	/^  exception GC_Failure$/;"	e
+GET	sm5.ml	/^    | GET $/;"	C	type:SM5/cmd
+GET	sm5.ml	/^    | GET $/;"	C	type:Sm5/cmd
+ID	parser.ml	/^  | ID of (string)$/;"	C	type:token
+ID	parser.mli	/^  | ID of (string)$/;"	C	type:token
+IF	k.ml	/^  | IF of exp * exp * exp       (* if-then-else *)$/;"	C	type:K/exp
+IF	k.ml	/^  | IF of exp * exp * exp       (* if-then-else *)$/;"	C	type:KMINUS/exp
+IF	parser.ml	/^  | IF$/;"	C	type:token
+IF	parser.mli	/^  | IF$/;"	C	type:token
+IN	parser.ml	/^  | IN$/;"	C	type:token
+IN	parser.mli	/^  | IN$/;"	C	type:token
+JTR	sm5.ml	/^    | JTR of command * command$/;"	C	type:SM5/cmd
+JTR	sm5.ml	/^    | JTR of command * command$/;"	C	type:Sm5/cmd
+K	k.ml	1;"	M
+KMINUS	k.ml	1;"	M
+KParseTreePrinter	pp.ml	1;"	M
+LB	parser.ml	/^  | LB$/;"	C	type:token
+LB	parser.mli	/^  | LB$/;"	C	type:token
+LBLOCK	parser.ml	/^  | LBLOCK$/;"	C	type:token
+LBLOCK	parser.mli	/^  | LBLOCK$/;"	C	type:token
+LESS	k.ml	/^  | LESS of exp * exp$/;"	C	type:K/exp
+LESS	k.ml	/^  | LESS of exp * exp$/;"	C	type:KMINUS/exp
+LESS	sm5.ml	/^    | LESS $/;"	C	type:Sm5/cmd
+LESS	sm5.ml	/^    | LESS$/;"	C	type:SM5/cmd
+LET	parser.ml	/^  | LET$/;"	C	type:token
+LET	parser.mli	/^  | LET$/;"	C	type:token
+LETF	k.ml	/^  | LETF of id * id * exp * exp (* procedure binding *)$/;"	C	type:K/exp
+LETF	k.ml	/^  | LETF of id * id * exp * exp (* procedure binding *)$/;"	C	type:KMINUS/exp
+LETV	k.ml	/^  | LETV of id * exp * exp      (* variable binding *)$/;"	C	type:K/exp
+LETV	k.ml	/^  | LETV of id * exp * exp      (* variable binding *)$/;"	C	type:KMINUS/exp
+LOAD	sm5.ml	/^    | LOAD $/;"	C	type:SM5/cmd
+LOAD	sm5.ml	/^    | LOAD $/;"	C	type:Sm5/cmd
+LOC	k.ml	1;"	M
+LP	parser.ml	/^  | LP$/;"	C	type:token
+LP	parser.mli	/^  | LP$/;"	C	type:token
+Lexer	lexer.ml	1;"	M
+LexicalError	lexer.ml	/^ exception LexicalError$/;"	e
+Loc	k.ml	1;"	M
+Loc	sm5.ml	/^  and evalue = Loc of loc | Proc of proc$/;"	C	type:evalue
+Location	k.ml	/^  type t = Location of int$/;"	C	type:Loc/t
+M	k.ml	/^  type 'a t = M of Loc.t * 'a content list$/;"	C	type:t
+MALLOC	sm5.ml	/^    | MALLOC $/;"	C	type:SM5/cmd
+MALLOC	sm5.ml	/^    | MALLOC $/;"	C	type:Sm5/cmd
+MEM	k.ml	1;"	M
+MINUS	parser.ml	/^  | MINUS$/;"	C	type:token
+MINUS	parser.mli	/^  | MINUS$/;"	C	type:token
+MUL	k.ml	/^  | MUL of exp * exp$/;"	C	type:K/exp
+MUL	k.ml	/^  | MUL of exp * exp$/;"	C	type:KMINUS/exp
+MUL	sm5.ml	/^    | MUL $/;"	C	type:SM5/cmd
+MUL	sm5.ml	/^    | MUL $/;"	C	type:Sm5/cmd
+Main	main.ml	1;"	M
+Mem	k.ml	1;"	M
+NOT	k.ml	/^  | NOT of exp$/;"	C	type:K/exp
+NOT	k.ml	/^  | NOT of exp$/;"	C	type:KMINUS/exp
+NOT	parser.ml	/^  | NOT$/;"	C	type:token
+NOT	parser.mli	/^  | NOT$/;"	C	type:token
+NOT	sm5.ml	/^    | NOT$/;"	C	type:SM5/cmd
+NOT	sm5.ml	/^    | NOT$/;"	C	type:Sm5/cmd
+NUM	k.ml	/^  | NUM of int | TRUE | FALSE | UNIT$/;"	C	type:K/exp
+NUM	k.ml	/^  | NUM of int | TRUE | FALSE | UNIT$/;"	C	type:KMINUS/exp
+NUM	parser.ml	/^  | NUM of (int)$/;"	C	type:token
+NUM	parser.mli	/^  | NUM of (int)$/;"	C	type:token
+Not_allocated	k.ml	/^  exception Not_allocated$/;"	e	Module:MEM
+Not_allocated	k.ml	/^  exception Not_allocated$/;"	e	Module:Mem
+Not_bound	k.ml	/^  exception Not_bound$/;"	e	Module:ENV
+Not_bound	k.ml	/^  exception Not_bound$/;"	e	Module:Env
+Not_initialized	k.ml	/^  exception Not_initialized$/;"	e	Module:MEM
+Not_initialized	k.ml	/^  exception Not_initialized$/;"	e	Module:Mem
+PLUS	parser.ml	/^  | PLUS$/;"	C	type:token
+PLUS	parser.mli	/^  | PLUS$/;"	C	type:token
+POP	sm5.ml	/^    | POP $/;"	C	type:SM5/cmd
+POP	sm5.ml	/^    | POP $/;"	C	type:Sm5/cmd
+PROC	parser.ml	/^  | PROC$/;"	C	type:token
+PROC	parser.mli	/^  | PROC$/;"	C	type:token
+PUSH	sm5.ml	/^    | PUSH of obj $/;"	C	type:SM5/cmd
+PUSH	sm5.ml	/^    | PUSH of obj $/;"	C	type:Sm5/cmd
+PUT	sm5.ml	/^    | PUT $/;"	C	type:SM5/cmd
+PUT	sm5.ml	/^    | PUT $/;"	C	type:Sm5/cmd
+Parser	parser.ml	1;"	M
+Parser	parser.mli	1;"	M
+ParsingError	parser.ml	/^exception ParsingError$/;"	e
+Pp	pp.ml	1;"	M
+Proc	k.ml	/^  and  env_entry = Addr of Loc.t | Proc of id * exp * env$/;"	C	type:K/env_entry
+Proc	sm5.ml	/^  and evalue = Loc of loc | Proc of proc$/;"	C	type:evalue
+RB	parser.ml	/^  | RB$/;"	C	type:token
+RB	parser.mli	/^  | RB$/;"	C	type:token
+RBLOCK	parser.ml	/^  | RBLOCK$/;"	C	type:token
+RBLOCK	parser.mli	/^  | RBLOCK$/;"	C	type:token
+READ	k.ml	/^  | READ of id$/;"	C	type:K/exp
+READ	k.ml	/^  | READ of id$/;"	C	type:KMINUS/exp
+READ	parser.ml	/^  | READ$/;"	C	type:token
+READ	parser.mli	/^  | READ$/;"	C	type:token
+RP	parser.ml	/^  | RP$/;"	C	type:token
+RP	parser.mli	/^  | RP$/;"	C	type:token
+SEMICOLON	parser.ml	/^  | SEMICOLON$/;"	C	type:token
+SEMICOLON	parser.mli	/^  | SEMICOLON$/;"	C	type:token
+SEQ	k.ml	/^  | SEQ of exp * exp            (* sequence *)$/;"	C	type:K/exp
+SEQ	k.ml	/^  | SEQ of exp * exp            (* sequence *)$/;"	C	type:KMINUS/exp
+SLASH	parser.ml	/^  | SLASH$/;"	C	type:token
+SLASH	parser.mli	/^  | SLASH$/;"	C	type:token
+SM5	sm5.ml	1;"	M
+STAR	parser.ml	/^  | STAR$/;"	C	type:token
+STAR	parser.mli	/^  | STAR$/;"	C	type:token
+STORE	sm5.ml	/^    | STORE $/;"	C	type:SM5/cmd
+STORE	sm5.ml	/^    | STORE $/;"	C	type:Sm5/cmd
+SUB	k.ml	/^  | SUB of exp * exp$/;"	C	type:K/exp
+SUB	k.ml	/^  | SUB of exp * exp$/;"	C	type:KMINUS/exp
+SUB	sm5.ml	/^    | SUB $/;"	C	type:SM5/cmd
+SUB	sm5.ml	/^    | SUB $/;"	C	type:Sm5/cmd
+Sm5	sm5.ml	1;"	M
+THEN	parser.ml	/^  | THEN$/;"	C	type:token
+THEN	parser.mli	/^  | THEN$/;"	C	type:token
+TO	parser.ml	/^  | TO$/;"	C	type:token
+TO	parser.mli	/^  | TO$/;"	C	type:token
+TRUE	k.ml	/^  | NUM of int | TRUE | FALSE | UNIT$/;"	C	type:K/exp
+TRUE	k.ml	/^  | NUM of int | TRUE | FALSE | UNIT$/;"	C	type:KMINUS/exp
+TRUE	parser.ml	/^  | TRUE$/;"	C	type:token
+TRUE	parser.mli	/^  | TRUE$/;"	C	type:token
+Translate	translate.ml	1;"	M
+Translator	translate.ml	1;"	M
+U	k.ml	/^  type 'a content = V of 'a | U$/;"	C	type:Mem/content
+UNBIND	sm5.ml	/^    | UNBIND$/;"	C	type:SM5/cmd
+UNBIND	sm5.ml	/^    | UNBIND$/;"	C	type:Sm5/cmd
+UNBOX	sm5.ml	/^    | UNBOX of string $/;"	C	type:SM5/cmd
+UNBOX	sm5.ml	/^    | UNBOX of string $/;"	C	type:Sm5/cmd
+UNIT	k.ml	/^  | NUM of int | TRUE | FALSE | UNIT$/;"	C	type:K/exp
+UNIT	k.ml	/^  | NUM of int | TRUE | FALSE | UNIT$/;"	C	type:KMINUS/exp
+UNIT	parser.ml	/^  | UNIT$/;"	C	type:token
+UNIT	parser.mli	/^  | UNIT$/;"	C	type:token
+V	k.ml	/^  type 'a content = V of 'a | U$/;"	C	type:Mem/content
+V	sm5.ml	/^  type svalue = V of value | P of proc | M of (string * evalue)$/;"	C	type:svalue
+VAR	k.ml	/^  | VAR of id$/;"	C	type:K/exp
+VAR	k.ml	/^  | VAR of id$/;"	C	type:KMINUS/exp
+Val	parser.ml	/^type declLet = Val of string * K.K.exp$/;"	C	type:declLet
+Val	sm5.ml	/^  and obj = Val of value | Id of string | Fn of string * command$/;"	C	type:obj
+WHILE	k.ml	/^  | WHILE of exp * exp          (* while loop *)$/;"	C	type:K/exp
+WHILE	k.ml	/^  | WHILE of exp * exp          (* while loop *)$/;"	C	type:KMINUS/exp
+WHILE	parser.ml	/^  | WHILE$/;"	C	type:token
+WHILE	parser.mli	/^  | WHILE$/;"	C	type:token
+WRITE	k.ml	/^  | WRITE of exp$/;"	C	type:K/exp
+WRITE	k.ml	/^  | WRITE of exp$/;"	C	type:KMINUS/exp
+WRITE	parser.ml	/^  | WRITE$/;"	C	type:token
+WRITE	parser.mli	/^  | WRITE$/;"	C	type:token
+alloc	k.ml	/^  let alloc (M (boundary,storage)) = $/;"	v
+alloc	k.ml	/^  val alloc : 'a t -> Loc.t * 'a t (* get fresh memory cell : Mem.alloc mem => (loc, mem') *)$/;"	v	Module:MEM
+arg_id	k.ml	/^      let (arg_id, e_body, env_saved) = lookup_env_proc env f in$/;"	v
+arg_v	k.ml	/^      let (arg_v, mem') = eval mem env arg_exp in$/;"	v
+base	k.ml	/^  let base = Location(0)$/;"	v	Module:Loc
+base	k.ml	/^  val base : t$/;"	v	Module:LOC
+bind	k.ml	/^  val bind : ('a, 'b) t -> 'a -> 'b -> ('a, 'b) t  (* id binding : Env.bind env key content => env'*)$/;"	v	Module:ENV
+box_stack	sm5.ml	/^  let rec box_stack s i accum_list =$/;"	v
+cmd	sm5.ml	/^  type cmd = $/;"	t	Module:SM5
+cmd	sm5.ml	/^  type cmd = $/;"	t	Module:Sm5
+cmd_to_str	sm5.ml	/^  let rec cmd_to_str indent cmd = $/;"	v
+command	sm5.ml	/^  and command = cmd list$/;"	v
+command_to_str	sm5.ml	/^  val command_to_str : string -> command -> string$/;"	v
+comment_depth	lexer.ml	/^ let comment_depth = ref 0$/;"	v
+cont_to_str	sm5.ml	/^  let cont_to_str k = $/;"	v
+content	k.ml	/^  type 'a content = V of 'a | U$/;"	t	Module:Mem
+continuation	sm5.ml	/^  type continuation = (command * environment) list$/;"	t
+debug_mode	sm5.ml	/^  let debug_mode = ref false$/;"	v
+debug_mode	sm5.ml	/^  val debug_mode : bool ref$/;"	v
+declLet	parser.ml	/^type declLet = Val of string * K.K.exp$/;"	t
+desugarLet	parser.ml	/^let rec desugarLet: declLet * K.K.exp -> K.K.exp  =$/;"	v
+diff	k.ml	/^  let diff (Location(a)) (Location(b)) = a - b$/;"	v	Module:Loc
+diff	k.ml	/^  val diff : t -> t -> int$/;"	v	Module:LOC
+empty	k.ml	/^  let empty = E (fun x -> raise Not_bound)$/;"	v	Module:Env
+empty	k.ml	/^  let empty = M (Loc.base,[])$/;"	v
+empty	k.ml	/^  val empty : 'a t (* get empty memory *)$/;"	v	Module:MEM
+empty	k.ml	/^  val empty : ('a, 'b) t (* get empty environment *)$/;"	v	Module:ENV
+emptyEnv	k.ml	/^  let emptyEnv = Env.empty$/;"	v	Module:K
+emptyEnv	k.ml	/^  val emptyEnv : env$/;"	v	Module:KMINUS
+emptyMemory	k.ml	/^  let emptyMemory = Mem.empty$/;"	v	Module:K
+env	k.ml	/^  type env = (id, env_entry) Env.t$/;"	t	Module:K
+env	k.ml	/^  type env$/;"	t	Module:KMINUS
+env'	k.ml	/^      let env' = Env.bind env_saved arg_id (Addr l) in$/;"	v
+env'	k.ml	/^      let env' = Env.bind env_saved arg_id ref_entry in$/;"	v
+env''	k.ml	/^      let env'' = Env.bind env' f (Proc (arg_id, e_body, env_saved)) in$/;"	v
+env_entry	k.ml	/^  and  env_entry = Addr of Loc.t | Proc of id * exp * env$/;"	t	Module:K
+environment	sm5.ml	/^  and environment = (string * evalue) list$/;"	t
+equal	k.ml	/^  let equal (Location(a)) (Location(b)) = (a = b)$/;"	v	Module:Loc
+equal	k.ml	/^  val equal : t -> t -> bool$/;"	v	Module:LOC
+eval	k.ml	/^  let rec eval : memory -> env -> exp -> (value * memory) = fun mem env e ->$/;"	v	Module:K
+evalfor	k.ml	/^    and evalfor id n1 n2 mem env e = $/;"	v
+evalue	sm5.ml	/^  and evalue = Loc of loc | Proc of proc$/;"	t
+exp	k.ml	/^  type exp =$/;"	t	Module:K
+exp	k.ml	/^  type exp =$/;"	t	Module:KMINUS
+gc_mode	sm5.ml	/^  let gc_mode = ref false$/;"	v
+gc_mode	sm5.ml	/^  val gc_mode : bool ref$/;"	v
+id	k.ml	/^  type id = string$/;"	t	Module:K
+id	k.ml	/^  type id = string$/;"	t	Module:KMINUS
+increase	k.ml	/^  let increase (Location(base)) n = Location(base+n)$/;"	v	Module:Loc
+increase	k.ml	/^  val increase : t -> int -> t$/;"	v	Module:LOC
+indent	pp.ml	/^    let indent l = List.map (fun s -> pfx ^ s) l$/;"	v
+is_equal	sm5.ml	/^  let is_equal v1 v2 =$/;"	v
+keyword_tbl	lexer.ml	/^ let keyword_tbl = Hashtbl.create 31$/;"	v
+l	k.ml	/^      let (l, mem'') = Mem.alloc mem' in$/;"	v
+load	k.ml	/^  let load (M (boundary,storage)) loc =$/;"	v
+load	k.ml	/^  val load : 'a t -> Loc.t  -> 'a (* load value : Mem.load mem loc => value *)$/;"	v	Module:MEM
+load	sm5.ml	/^  let load l m = $/;"	v
+loc	sm5.ml	/^  type loc $/;"	t	Module:SM5
+loc	sm5.ml	/^  type loc = int * int$/;"	t	Module:Sm5
+loc_id	sm5.ml	/^  let loc_id = ref 0$/;"	v
+loc_to_str	sm5.ml	/^  let loc_to_str (base, offset) = $/;"	v
+lookup	k.ml	/^  val lookup : ('a, 'b) t -> 'a -> 'b (* lookup environment : Env.lookup env key => content *)$/;"	v	Module:ENV
+lookup_env	sm5.ml	/^  let lookup_env x e =$/;"	v
+lookup_env_loc	k.ml	/^  let lookup_env_loc e x =$/;"	v	Module:K
+lookup_env_proc	k.ml	/^  let lookup_env_proc e f =$/;"	v	Module:K
+lookup_record	sm5.ml	/^  let lookup_record x r = $/;"	v
+main	main.ml	/^let main () =$/;"	v
+malloc	sm5.ml	/^  let malloc () = $/;"	v
+malloc_with_gc	sm5.ml	/^  let malloc_with_gc s m e c k =$/;"	v
+mem_limit	sm5.ml	/^  let mem_limit = 128$/;"	v
+mem_to_str	sm5.ml	/^  let mem_to_str m =$/;"	v
+memory	k.ml	/^  type memory = value Mem.t$/;"	t	Module:K
+memory	k.ml	/^  type memory$/;"	t	Module:KMINUS
+memory	sm5.ml	/^  type memory = (loc * value) list$/;"	t
+n1	k.ml	/^      let n1 = value_int v1 in$/;"	v
+n2	k.ml	/^      let n2 = value_int v2 in$/;"	v
+new_l	sm5.ml	/^        let new_l = (!loc_id, 0) in$/;"	v
+new_m	sm5.ml	/^      let new_m = List.filter (fun (l, _) -> List.mem l !reachable_locs) m in$/;"	v
+new_mem	k.ml	/^      let new_mem = Mem.store mem'' l arg_v in$/;"	v
+obj	sm5.ml	/^  and obj = Val of value | Id of string | Fn of string * command$/;"	t
+pfx	pp.ml	/^    let pfx = "  "$/;"	v
+print	pp.ml	/^     let print pgm =  List.iter print_endline (pe pgm)$/;"	v
+proc	sm5.ml	/^  type proc = string * command * environment$/;"	t
+proc_to_str	sm5.ml	/^  let rec proc_to_str indent (x, comm, env) =$/;"	v
+program	k.ml	/^  type program = exp$/;"	t	Module:K
+program	k.ml	/^  type program = exp$/;"	t	Module:KMINUS
+program	parser.mli	/^val program :$/;"	v
+ps	pp.ml	/^    let ps s l = $/;"	v
+q	pp.ml	/^  let q x = ["\\"" ^ x ^ "\\""]$/;"	v
+reachable_locs	sm5.ml	/^  let reachable_locs : (loc list) ref = ref []$/;"	v
+record	sm5.ml	/^  type record = (string * loc) list$/;"	t	Module:Sm5
+record	sm5.ml	/^  type record$/;"	t	Module:SM5
+ref_entry	k.ml	/^      let ref_entry = Addr (lookup_env_loc env arg_var) in$/;"	v
+replace_nth	k.ml	/^  let rec replace_nth = fun l n c -> $/;"	v
+run	k.ml	/^  let run pgm = $/;"	v
+run	k.ml	/^  val run : program -> value$/;"	v	Module:KMINUS
+run	sm5.ml	/^  let run c = run_helper ([], [], [], c, []) $/;"	v
+run	sm5.ml	/^  val run : command -> unit$/;"	v
+run_helper	sm5.ml	/^  let rec run_helper (s, m, e, c, k) = $/;"	v
+stack	sm5.ml	/^  type stack = svalue list$/;"	t
+stack_to_str	sm5.ml	/^  let stack_to_str s =$/;"	v
+start	lexer.ml	/^let rec start lexbuf =$/;"	v
+step	sm5.ml	/^  let rec step = function$/;"	v
+store	k.ml	/^  let store (M (boundary,storage)) loc content =$/;"	v
+store	k.ml	/^  val store : 'a t -> Loc.t -> 'a -> 'a t (* save value : Mem.store mem loc value => mem' *)$/;"	v	Module:MEM
+store	sm5.ml	/^  let store l v m = $/;"	v
+sval_to_str	sm5.ml	/^  let sval_to_str = function$/;"	v
+svalue	sm5.ml	/^  type svalue = V of value | P of proc | M of (string * evalue)$/;"	t
+t	k.ml	/^  type 'a t = M of Loc.t * 'a content list$/;"	t
+t	k.ml	/^  type 'a t$/;"	t	Module:MEM
+t	k.ml	/^  type ('a, 'b) t = E of ('a -> 'b)$/;"	t	Module:Env
+t	k.ml	/^  type ('a, 'b) t$/;"	t	Module:ENV
+t	k.ml	/^  type t = Location of int$/;"	t	Module:Loc
+t	k.ml	/^  type t$/;"	t	Module:LOC
+token	parser.ml	/^type token =$/;"	t
+token	parser.mli	/^type token =$/;"	t
+trans	translate.ml	/^  let rec trans : K.program -> Sm5.command = function$/;"	v	Module:Translator
+v1	k.ml	/^      let (v1, mem') = eval mem env e1 in$/;"	v
+v2	k.ml	/^      let (v2, mem'') = eval mem' env e2 in$/;"	v
+v_cond	k.ml	/^      let (v_cond, mem') = eval mem env e_cond in$/;"	v	Module:K
+val_to_str	sm5.ml	/^  let val_to_str = function $/;"	v
+value_bool	k.ml	/^  let value_bool v =$/;"	v	Module:K
+value_int	k.ml	/^  let value_int v =$/;"	v	Module:K
+value_unit	k.ml	/^  let value_unit v =$/;"	v	Module:K
+verbose1	lexer.ml	/^ let verbose1 s =  (* (print_string s; print_newline(); s) *) s$/;"	v
+verbose2	lexer.ml	/^ let verbose2 s =  (* (print_string s; print_newline()) *) ()$/;"	v
+yyact	parser.ml	/^let yyact = [|$/;"	v
+yycheck	parser.ml	/^let yycheck = "\\005\\001\\$/;"	v
+yydefred	parser.ml	/^let yydefred = "\\000\\000\\$/;"	v
+yydgoto	parser.ml	/^let yydgoto = "\\002\\000\\$/;"	v
+yygindex	parser.ml	/^let yygindex = "\\000\\000\\$/;"	v
+yylen	parser.ml	/^let yylen = "\\002\\000\\$/;"	v
+yylhs	parser.ml	/^let yylhs = "\\255\\255\\$/;"	v
+yynames_block	parser.ml	/^let yynames_block = "\\$/;"	v
+yynames_const	parser.ml	/^let yynames_const = "\\$/;"	v
+yyrindex	parser.ml	/^let yyrindex = "\\000\\000\\$/;"	v
+yysindex	parser.ml	/^let yysindex = "\\007\\000\\$/;"	v
+yytable	parser.ml	/^let yytable = "\\026\\000\\$/;"	v
+yytablesize	parser.ml	/^let yytablesize = 470$/;"	v
+yytransl_block	parser.ml	/^let yytransl_block = [|$/;"	v
+yytransl_const	parser.ml	/^let yytransl_const = [|$/;"	v

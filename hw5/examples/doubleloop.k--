@@ -1,0 +1,16 @@
+let x := 1 in
+let y := 1 in
+let z := 1 in
+let sum := 0 in
+while (x < 11) do (
+	y := 1;
+	while (y < x) do(
+		sum := sum + z;
+		write(sum);
+		y := y+1
+	);
+	write(111);
+	z := z * 10;
+	x := x+1
+); 
+write sum

@@ -209,11 +209,67 @@ struct
       let _ = loc_id := !loc_id + 1 in
       ((!loc_id, 0), m)
     else
-      let _ = reachable_locs := [] in
-      (* TODO : Add the code that marks the reachable locations.
-       * let _ = ... 
-       *)
+      let _ = reachable_locs := [] in (* should be in (base, offset) format *)
+      (* TODO : Add the code that marks the reachable locations.*)
+			
+			(* get all the locations from the ids in the env *)
+			let rec traverse_env env =
+				if (List.length env) == 0 then []
+				else let (_, e_val) = List.hd env in
+					match e_val with
+					| Loc l -> [l]@(traverse_env(List.tl env))
+					| Proc p -> traverse_env(List.tl env) in
+			
+			let rec base_in_mem b m = 
+				if (List.length m) == 0 then []
+				else let (loc, _) = List.hd m in
+					let (base, _) = loc in
+					if base == b then [loc]@(base_in_mem b (List.tl m))
+					else (base_in_mem b (List.tl m)) in
+	
+			(* list of all connected locations of a given location *)
+			let get_siblings v =
+				match v with
+				| Z n -> []
+				| B b -> []
+				| L l -> [l]
+				| Unit -> []
+				| R r -> 
+					let rec record_to_list r' = 
+						if (List.length r') == 0 then []
+						else let (_, l) = List.hd r' in
+							[l]@(record_to_list (List.tl r')) in
+					record_to_list r in
+		
+			(* build work list with current environment and the continuation *)
+			let rec build_wl conti = 
+				if List.length conti == 0 then (traverse_env e)
+				else let (_, env) = (List.hd conti) in
+					(traverse_env env) @ (build_wl (List.tl conti)) in
+
+			let worklist : loc list = (build_wl k) in 	
+
+			let rec iter wl = 
+				if List.length wl == 0 then ()
+
+				else let loc = List.hd wl in 
+					(* already traversed, and in the donelist *)
+					if (List.mem loc !reachable_locs) then iter (List.tl wl)
+
+					(* not yet traversed *)
+					else let v = load loc m in (* memory value at the given location *)
+						(* append all the sibligs if the value is Loc or Record *)
+						let new_wl = (List.tl wl) @ (get_siblings v) in  
+						let (base, _) = loc in
+						let new_wl = new_wl @ (base_in_mem base m) in
+						let _ = reachable_locs := (!reachable_locs)@[loc] in
+						(iter new_wl) in
+
+			let _ = iter worklist in	
+
+			(* (l, v) : memory entry, l = (base, offset) : location *)
       let new_m = List.filter (fun (l, _) -> List.mem l !reachable_locs) m in
+			(* select memory entries whose location is in the reachable_locs *) 
       if List.length new_m < mem_limit then
         let _ = loc_id := !loc_id + 1 in
         let new_l = (!loc_id, 0) in

@@ -1,0 +1,15 @@
+let x := 1 in
+let y := 1 in
+let z := 1 in
+let i := 0 in
+let sum := 0 in
+while (x < 11) do (
+	for i := x to z*10 do(
+		sum := sum + x;
+		write sum
+	);
+	x := x+1;
+	write 11111
+); 
+
+write sum
