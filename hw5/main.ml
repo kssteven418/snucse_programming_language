@@ -3,7 +3,6 @@
  *
  * SM5
  *)
-(*
 open Translate
 open Pp
 open Sm5
@@ -38,7 +37,7 @@ let main () =
     Sm5.run (Translator.trans pgm)
 
 let _ = main ()
-*)
+(*
 
 open Sm5.Sm5
 
@@ -322,3 +321,4 @@ let check_exception cmd =
 	let _ = run cmds5 (* 630 *)
 	let _ = run cmds6 (* 500 *)
 
+*)

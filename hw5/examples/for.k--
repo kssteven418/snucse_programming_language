@@ -1,0 +1,4 @@
+let i := 0 in 
+let j := 10 in
+(for i := 1 to j do write (j:=i)); 
+write (j) 

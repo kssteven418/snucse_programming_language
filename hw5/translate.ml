@@ -79,10 +79,12 @@ module Translator = struct
 	| K.NOT e -> trans e @ [Sm5.NOT]
 	
 	(* ASSIGN OPERATOR *)
-	| K.ASSIGN (x, e) -> trans e @ [Sm5.PUSH (Sm5.Id x); Sm5.STORE]
+	| K.ASSIGN (x, e) -> trans e @ 
+		[Sm5.PUSH (Sm5.Id x); Sm5.STORE] @ (* store *)
+		[Sm5.PUSH (Sm5.Id x); Sm5.LOAD] (* restore the stack top *)
 
 	(* CONTROL STATEMENTS *)
-	| K.SEQ (e1, e2) -> trans e1 @ trans e2
+	| K.SEQ (e1, e2) -> trans e1 @ [Sm5.POP] @ trans e2
 	| K.IF (ctrl, et, ef) -> trans ctrl @ [Sm5.JTR(trans et, trans ef)]
 
 	| K.WHILE (ctrl, e) -> 
@@ -91,10 +93,16 @@ module Translator = struct
 		trans whilefun
 
 	| K.FOR (x, el, eh, e) -> 
-		let ctrl = K.NOT(K.LESS(K.VAR("n2#"), K.VAR(x))) in
-		let body = K.SEQ(e, K.ASSIGN(x, K.ADD(K.VAR(x), K.NUM 1))) in
-		let forfun = K.LETV("n2#", eh, 
-				K.SEQ(K.ASSIGN (x, el), K.WHILE(ctrl, body))) in
+		let init_ctrl = K.LESS(K.VAR("n2#"), K.VAR("n1#")) in
+		let ctrl = K.NOT(K.LESS(K.SUB(K.VAR("n2#"), K.VAR("n1#")), K.VAR("n#"))) in
+		let body = K.SEQ(K.SEQ(K.ASSIGN(x, K.ADD(K.VAR("n1#"), K.VAR("n#"))), e), 
+					K.ASSIGN("n#", K.ADD(K.VAR("n#"), K.NUM 1))) in
+		let forfun = K.LETV("n1#", el,
+				K.LETV("n2#", eh,
+				K.LETV("n#", K.NUM 0,
+				K.IF(init_ctrl, K.UNIT, (* FORF *)
+					K.SEQ(K.ASSIGN (x, el), K.WHILE(ctrl, body)))))) in 
+
 		trans forfun
 
 	(* LET STATEMENTS *)
@@ -124,7 +132,11 @@ module Translator = struct
 
 	(* INPUT OUTPUT *)
     | K.READ x -> [Sm5.GET; Sm5.PUSH (Sm5.Id x); Sm5.STORE; Sm5.PUSH (Sm5.Id x); Sm5.LOAD]
-	| K.WRITE e -> trans e @ [Sm5.PUT]
-    | _ -> failwith "Unimplemented"
+	| K.WRITE e -> trans e @
+		[Sm5.MALLOC; Sm5.BIND "loc#"; 
+		Sm5.PUSH (Sm5.Id "loc#"); Sm5.STORE] @ (* store the stack top *)
+		[Sm5.PUSH (Sm5.Id "loc#"); Sm5.LOAD; 
+		Sm5.PUSH (Sm5.Id "loc#"); Sm5.LOAD] @ (* load the stack top twice*)
+		[Sm5.PUT; Sm5.UNBIND] (* Write -> stack top poped out *)
 
 end
