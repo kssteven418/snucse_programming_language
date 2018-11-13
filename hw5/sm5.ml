@@ -195,7 +195,7 @@ struct
       (l, v) :: (List.remove_assoc l m) 
     else (l, v) :: m
 
-  let mem_limit = 128
+  let mem_limit = 8
 
   let loc_id = ref 0
 
@@ -204,6 +204,7 @@ struct
   (* TODO : Complete this function.
    * Implement the GC algorithm introduced in class material.
    *)
+
   let malloc_with_gc s m e c k =
     if List.length m < mem_limit then
       let _ = loc_id := !loc_id + 1 in
@@ -220,6 +221,7 @@ struct
 					| Loc l -> [l]@(traverse_env(List.tl env))
 					| Proc p -> traverse_env(List.tl env) in
 			
+			(* find all locations in the memory having base b *)
 			let rec base_in_mem b m = 
 				if (List.length m) == 0 then []
 				else let (loc, _) = List.hd m in
@@ -243,9 +245,9 @@ struct
 		
 			(* build work list with current environment and the continuation *)
 			let rec build_wl conti = 
-				if List.length conti == 0 then (traverse_env e)
+				if List.length conti == 0 then (traverse_env e) (* current env. *)
 				else let (_, env) = (List.hd conti) in
-					(traverse_env env) @ (build_wl (List.tl conti)) in
+					(traverse_env env) @ (build_wl (List.tl conti)) in (* for all env. in continuation *)
 
 			let worklist : loc list = (build_wl k) in 	
 
@@ -260,6 +262,7 @@ struct
 					else let v = load loc m in (* memory value at the given location *)
 						(* append all the sibligs if the value is Loc or Record *)
 						let new_wl = (List.tl wl) @ (get_siblings v) in  
+						(* append all the locations with the same base *)
 						let (base, _) = loc in
 						let new_wl = new_wl @ (base_in_mem base m) in
 						let _ = reachable_locs := (!reachable_locs)@[loc] in
