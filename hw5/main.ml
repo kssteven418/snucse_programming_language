@@ -485,6 +485,308 @@ let tcmd5 =
     
     cmds
 
+
+(* Test 6 : function and location list *)
+let tcmd6 = 
+    let cmds = [
+
+        MALLOC;
+		BIND "xp";
+
+		MALLOC;
+		BIND "x";
+    	PUSH (Val (Z 1));
+    	PUSH (Id "x");
+    	STORE;
+    	
+		PUSH (Id "x");
+    	PUSH (Id "xp");
+    	STORE;
+		UNBIND; (* unbind x *)
+        
+		PUSH (Fn ("t", [
+           	MALLOC;
+			BIND "x1";
+    		PUSH (Val (Z 6));
+    		PUSH (Id "x1");
+    		STORE;
+
+           	MALLOC;
+			BIND "x2";
+    		PUSH (Val (Z 1));
+    		PUSH (Id "x2");
+    		STORE;
+
+           	MALLOC;
+			BIND "x3";
+    		PUSH (Val (Z 1));
+    		PUSH (Id "x3");
+    		STORE;
+
+           	MALLOC;
+			BIND "x4";
+    		PUSH (Val (Z 1));
+    		PUSH (Id "x4");
+    		STORE;
+
+           	MALLOC;
+			BIND "x5";
+    		PUSH (Val (Z 1));
+    		PUSH (Id "x5");
+    		STORE;
+
+            PUSH (Id "x1");
+			PUSH (Id "x2");
+            STORE;
+
+			PUSH (Id "x2");
+			PUSH (Id "xp");
+			LOAD;
+			STORE;
+
+
+			PUSH (Id "xp");
+			LOAD;
+			PUSH (Id "x3");
+            STORE;
+
+            PUSH (Id "x3");
+			PUSH (Id "x4");
+            STORE;
+
+            PUSH (Id "x4");
+			PUSH (Id "x5");
+            STORE;
+			(* xp -> x *)
+			(* x5->x4->x3->x->x2->x1 *)
+
+        ]));
+        BIND "f";
+
+		PUSH (Id "f");
+		PUSH (Val (Z 1));
+		MALLOC;
+		CALL;
+
+		(* TRIGGER *)
+		(* xp->x->x2->x1 left *)
+		MALLOC;
+		BIND "y1";
+        PUSH (Val(Z 1));
+		PUSH (Id "y1");
+        STORE;
+
+		MALLOC;
+		BIND "y2";
+        PUSH (Val(Z 1));
+		PUSH (Id "y2");
+        STORE;
+
+		MALLOC;
+		BIND "y3";
+        PUSH (Val(Z 1));
+		PUSH (Id "y3");
+        STORE;
+		
+		MALLOC;
+		BIND "y4";
+        PUSH (Val(Z 1));
+		PUSH (Id "y4");
+        STORE;
+
+		(* Failure if MALLOC; *)
+		
+		PUSH (Id "xp");
+		LOAD;
+		LOAD;
+		LOAD;
+		LOAD;
+		PUT;
+
+    ] in cmds
+
+(* Test 7 : offsets, FAIL *)
+let tcmd7 = 
+  (* Location to be collected *)
+   
+  (* Another location with same base, different offset *)
+  let cmds =  
+    [MALLOC;
+	BIND "x";
+	PUSH (Val (Z 1));
+	PUSH (Id "x");
+	STORE;
+	
+	MALLOC;
+	BIND "y";
+	PUSH (Val (Z 2));
+	PUSH (Id "y");
+	STORE;
+
+	MALLOC;
+	BIND "z";
+	PUSH (Val (Z 3));
+	PUSH (Id "z");
+	STORE;
+
+	MALLOC;
+	BIND "w";
+	PUSH (Val (Z 4));
+	PUSH (Id "w");
+	STORE;
+	
+	(* x+10 -> y *)
+	PUSH (Id "y");
+    PUSH (Id "x"); 
+    PUSH (Val (Z 10)); 
+    ADD; 
+    STORE;   
+
+	(* w+5 = 100  *)
+	PUSH (Val (Z 100));
+    PUSH (Id "w"); 
+    PUSH (Val (Z 5)); 
+    ADD; 
+    STORE;   
+	
+	(* z+5 -> w+5 *)
+	PUSH (Id "w");
+	PUSH (Val (Z 5));
+	ADD; 
+    PUSH (Id "z"); 
+    PUSH (Val (Z 10)); 
+    ADD; 
+    STORE;   
+
+	(* y+20 -> [z, w] *)
+	UNBIND; (* w *)
+	UNBIND; (* z *)
+	BOX 2;
+	PUSH (Id "y");
+	PUSH (Val (Z 20));
+	ADD;
+	STORE;
+
+	UNBIND; (* y *)
+
+	(* only x is in the environment *)
+
+	(* TRIGGER, fail *)
+	MALLOC;
+    ]
+  in
+	cmds  
+
+(* Test 8 : offsets, SUCCESS *)
+let tcmd8 = 
+  (* Location to be collected *)
+   
+  (* Another location with same base, different offset *)
+  let cmds =  
+    [
+	MALLOC;
+	BIND "y";
+	PUSH (Val (Z 2));
+	PUSH (Id "y");
+	STORE;
+
+	MALLOC;
+	BIND "x";
+	PUSH (Val (Z 1));
+	PUSH (Id "x");
+	STORE;
+	
+	MALLOC;
+	BIND "z";
+	PUSH (Val (Z 3));
+	PUSH (Id "z");
+	STORE;
+
+	MALLOC;
+	BIND "w";
+	PUSH (Val (Z 4));
+	PUSH (Id "w");
+	STORE;
+	
+	(* x+10 -> y *)
+	PUSH (Id "y");
+    PUSH (Id "x"); 
+    PUSH (Val (Z 10)); 
+    ADD; 
+    STORE;   
+
+	(* w+5 = 100  *)
+	PUSH (Val (Z 100));
+    PUSH (Id "w"); 
+    PUSH (Val (Z 5)); 
+    ADD; 
+    STORE;   
+	
+	(* z+10 -> w+5 *)
+	PUSH (Id "w");
+	PUSH (Val (Z 5));
+	ADD; 
+    PUSH (Id "z"); 
+    PUSH (Val (Z 10)); 
+    ADD; 
+    STORE;   
+
+	(* y+20 -> [z, w] *)
+	UNBIND; (* w *)
+	UNBIND; (* z *)
+	BOX 2;
+	PUSH (Id "y");
+	PUSH (Val (Z 20));
+	ADD;
+	STORE;
+
+	UNBIND; (* x *)
+
+	(* only x is in the environment *)
+
+	(* TRIGGER *)
+	MALLOC;
+	BIND "1";
+	PUSH (Val (Z 1));
+	PUSH (Id "1");
+	STORE;
+ 
+	MALLOC;
+	BIND "1";
+	PUSH (Val (Z 1));
+	PUSH (Id "1");
+	STORE;
+
+	PUSH (Id "y");
+	PUSH (Val (Z 20));
+	ADD;
+	LOAD;
+	UNBOX "z";
+	PUSH(Val (Z 10));
+	ADD;
+	LOAD;
+	LOAD;
+
+	PUSH (Id "y");
+	PUSH (Val (Z 20));
+	ADD;
+	LOAD;
+	UNBOX "z";
+	PUSH(Val (Z 10));
+	ADD;
+	LOAD;
+	PUSH (Val (Z 5));
+	SUB;
+	LOAD;
+
+	ADD;
+	PUT;
+
+	(* Failure if MALLOC; *)
+    ]
+	in
+	cmds 
+
 (* 1. Simple malloc & use : trigger gc and success *)
 let cmds1 = 
     (* To be collected *)
@@ -745,17 +1047,20 @@ let cmds6 =
 
   cmds @ [PUSH (Id "x0"); PUSH (Val (Z 10)); ADD; LOAD; PUT]
 
-(*
 let _ = run cmds1 (* 137 *)
 let _ = print_endline (string_of_bool (check_exception cmds2)) (* true *)
 let _ = print_endline (string_of_bool (check_exception cmds3)) (* true *)
 let _ = print_endline (string_of_bool (check_exception cmds4)) (* true *)
 let _ = run cmds5 (* 630 *)
 let _ = run cmds6 (* 500 *)
-*)
 
+(*
 let _ = print_endline (string_of_bool (check_exception tcmd1)) (* true *)
 let _ = run tcmd2 (* 100 *)
 let _ = print_endline (string_of_bool (check_exception tcmd3)) (* true *)
-let _ = run tcmd4 (* 22 *)
-let _ = run tcmd5 (* 22 *)
+let _ = run tcmd4 (* 4 *)
+let _ = run tcmd5 (* 5 *)
+let _ = run tcmd6 (* 6 *)
+let _ = print_endline (string_of_bool (check_exception tcmd7)) (* true *)
+let _ = run tcmd8 (* 104 *)
+*)

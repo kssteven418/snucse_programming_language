@@ -195,7 +195,7 @@ struct
       (l, v) :: (List.remove_assoc l m) 
     else (l, v) :: m
 
-  let mem_limit = 8
+  let mem_limit = 128
 
   let loc_id = ref 0
 
