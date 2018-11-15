@@ -61,6 +61,7 @@ module Translator = struct
   let rec trans : K.program -> Sm5.command = function
     
 	(* BASICS *)
+	(* all debugged *)
   	| K.NUM i -> [Sm5.PUSH (Sm5.Val (Sm5.Z i))]
 	| K.TRUE -> [Sm5.PUSH (Sm5.Val (Sm5.B true))]
 	| K.FALSE -> [Sm5.PUSH (Sm5.Val (Sm5.B false))]
@@ -68,28 +69,31 @@ module Translator = struct
 	| K.VAR x -> [Sm5.PUSH (Sm5.Id x); Sm5.LOAD]	
 	
 	(* NUMERIC OPERATORS *)
+	(* all debugged *)
     | K.ADD (e1, e2) -> trans e1 @ trans e2 @ [Sm5.ADD]
     | K.SUB (e1, e2) -> trans e1 @ trans e2 @ [Sm5.SUB]
     | K.MUL (e1, e2) -> trans e1 @ trans e2 @ [Sm5.MUL]
     | K.DIV (e1, e2) -> trans e1 @ trans e2 @ [Sm5.DIV]
 	
 	(* BOOLEAN OPERATORS *)
+	(* all debugged *)
 	| K.EQUAL (e1, e2) -> trans e1 @ trans e2 @ [Sm5.EQ]
 	| K.LESS (e1, e2) -> trans e1 @ trans e2 @ [Sm5.LESS]
 	| K.NOT e -> trans e @ [Sm5.NOT]
 	
 	(* ASSIGN OPERATOR *)
+	(* all debugged *)
 	| K.ASSIGN (x, e) -> trans e @ 
 		[Sm5.PUSH (Sm5.Id x); Sm5.STORE] @ (* store *)
-		[Sm5.PUSH (Sm5.Id x); Sm5.LOAD] (* restore the stack top *)
+		[Sm5.PUSH (Sm5.Id x); Sm5.LOAD] (* restore 'v' on the stack top *)
 
 	(* CONTROL STATEMENTS *)
 	| K.SEQ (e1, e2) -> trans e1 @ [Sm5.POP] @ trans e2
 	| K.IF (ctrl, et, ef) -> trans ctrl @ [Sm5.JTR(trans et, trans ef)]
 
 	| K.WHILE (ctrl, e) -> 
-		let ftnbody = K.IF(ctrl, K.SEQ(e, K.CALLV("f#", K.UNIT)), K.UNIT) in
-		let whilefun = K.LETF("f#", "v#", ftnbody, K.CALLV("f#", K.UNIT)) in
+		let ftnbody = K.IF(K.VAR "v#", K.SEQ(e, K.CALLV("f#", ctrl)), K.UNIT) in
+		let whilefun = K.LETF("f#", "v#", ftnbody, K.CALLV("f#", ctrl)) in
 		trans whilefun
 
 	| K.FOR (x, el, eh, e) -> 
@@ -101,7 +105,7 @@ module Translator = struct
 				K.LETV("n2#", eh,
 				K.LETV("n#", K.NUM 0,
 				K.IF(init_ctrl, K.UNIT, (* FORF *)
-					K.SEQ(K.ASSIGN (x, el), K.WHILE(ctrl, body)))))) in 
+					K.SEQ(K.ASSIGN (x, K.VAR "n1#"), K.WHILE(ctrl, body)))))) in 
 
 		trans forfun
 
@@ -135,8 +139,10 @@ module Translator = struct
 	| K.WRITE e -> trans e @
 		[Sm5.MALLOC; Sm5.BIND "loc#"; 
 		Sm5.PUSH (Sm5.Id "loc#"); Sm5.STORE] @ (* store the stack top *)
+		(* load the stack top twice*)
+		(* one is for putting(and will be removed), and the other is to restore the stack top *)
 		[Sm5.PUSH (Sm5.Id "loc#"); Sm5.LOAD; 
-		Sm5.PUSH (Sm5.Id "loc#"); Sm5.LOAD] @ (* load the stack top twice*)
+		Sm5.PUSH (Sm5.Id "loc#"); Sm5.LOAD] @ 
 		[Sm5.PUT; Sm5.UNBIND] (* Write -> stack top poped out *)
 
 end

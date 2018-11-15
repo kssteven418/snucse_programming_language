@@ -40,7 +40,6 @@ let main () =
 
 let _ = main ()
 *)
-
 open Sm5.Sm5
 
 let _ = gc_mode := true
@@ -1063,4 +1062,6 @@ let _ = run tcmd5 (* 5 *)
 let _ = run tcmd6 (* 6 *)
 let _ = print_endline (string_of_bool (check_exception tcmd7)) (* true *)
 let _ = run tcmd8 (* 104 *)
+*)
+(*
 *)

@@ -1,0 +1,3 @@
+let i := 0 in 
+(for i := 10 to 5 do write(1)); 
+write(i)
