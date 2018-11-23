@@ -102,6 +102,10 @@ struct
   let store (l, m) p = (l, m @+ p)        
   let load (_, m) l = m l                
   let malloc (l, m) = (l, (l+1, m))
+		(* memory is defined as (next location, ftn of loc-> value)
+		   then, malloc returns 
+			 1) location to use,
+		   2) same memory with next location incremented *)
 
   (* auxiliary functions *)
   let getInt = function 
@@ -133,8 +137,12 @@ struct
     | SUB -> (fun (v1,v2) -> Int (getInt v1 - getInt v2))
     | AND -> (fun (v1,v2) -> Bool (getBool v1 && getBool v2))
     | OR ->  (fun (v1,v2) -> Bool (getBool v1 || getBool v2))
-    | EQ -> (* TODO : implement this *)
-      failwith "Unimplemented"
+    | EQ ->  (fun (v1, v2) -> match v1 with
+						| Int n -> Bool (getInt v1 = getInt v2)
+						| String s -> Bool (getString v1 = getString v2)
+						| Bool b -> Bool (getBool v1 = getBool v2)
+						| Loc l -> Bool (getLoc v1 = getInt v2)
+						|_ -> raise (TypeError "not comparable"))
 
   let rec printValue =
     function 
@@ -156,8 +164,10 @@ struct
       let (c, env') = getClosure v1 in
       (match c with 
       | Fun (x, e) -> eval (env' @+ (x, v2)) m'' e
-      | RecFun (f, x, e) ->  (* TODO : implement this *)
-        failwith "Unimplemented")
+      | RecFun (f, x, e) ->  
+				let new_env = (env' @+ (x, v2)) @+ (f, v1) in
+				eval new_env m'' e
+			)
     | IF (e1, e2, e3) ->
       let (v1, m') = eval env mem e1 in
       eval env m' (if getBool v1 then e2 else e3)
@@ -182,6 +192,47 @@ struct
     | SND e -> 
       let (v, m') = eval env mem e in
       (snd (getPair v), m')
+		
+		(* SEQ, MALLOC, ASSIGN, BANG, LET *) 
+		| SEQ (e1, e2) -> 
+			let (v1, m1) = eval env mem e1 in
+			let (v2, m2) = eval env m1 e2 in
+			(v2, m2)
+		
+		| MALLOC e ->
+			let (v, m1) = eval env mem e in
+			(* get a new location to store v *)
+			let (new_loc, m2) = malloc m1 in 
+			let m3 = store m2 (new_loc, v) in
+			(Loc new_loc, m3)
+		
+		| ASSIGN (e1, e2) -> (* e1 := e2 *)
+			let (l, m1) = eval env mem e1 in
+			let (v, m2) = eval env m1 e2 in
+			let m3 = store m2 (getLoc l, v) in
+			(v, m3)
+		
+		| BANG e -> (* !e *)
+			let (l, m1) = eval env mem e in
+			let v = load m1 (getLoc l) in
+			(v, m1)
+			
+		| LET (d, e) ->
+			match d with
+			| VAL (x, e1) -> (* x : id of var or ftn, e1 : value to be assigned *)
+				let (v1, m1) = eval env mem e1 in
+				let env' = env @+ (x, v1) in
+				let (v, m2) = eval env' m1 e in
+				(v, m2)
+			| REC (f, x, eb) -> 
+				let (v1, m1) = eval env mem (FN(x, eb)) in (* FN(x, eb) == fn x => eb *)
+				let closure = getClosure v1 in
+				let (_, env') = closure in
+				let closure' = Closure (RecFun (f, x, eb), env') in
+				let env'' = env @+ (f, closure') in
+				let (v, m2) = eval env'' m1 e in
+				(v, m2)
+
     (* TODO : complete the rest of interpreter *)
     | _ -> failwith "Unimplemented"
 
