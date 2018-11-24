@@ -18,19 +18,17 @@ let rec trans_obj : Sm5.obj -> Sonata.obj = function
   | Sm5.Fn (arg, command) -> 
 		let new_cmd = 
 			(* first, store the caller function *)
-			[Sm5.BIND "!caller_ftn"] @
+			[Sonata.BIND "!caller_ftn"] @
 			(* Now the stack is S, so execute the function command *)
-			command @
+			trans' command @
 			(* restore the caller function and unbind the temporary location *)
-			[Sm5.PUSH (Sm5.Id "!caller_ftn") ; Sm5.UNBIND ; Sm5.POP] @
+			[Sonata.PUSH (Sonata.Id "!caller_ftn") ; Sonata.UNBIND ; Sonata.POP] @
 			(* push a garbage value *)
-			[Sm5.PUSH (Sm5.Val (Sm5.Unit))] @
+			[Sonata.PUSH (Sonata.Val (Sonata.Unit))] @
 			(* push a garbage location *)
-			[Sm5.MALLOC] @
+			[Sonata.MALLOC; Sonata.CALL] in
 			(* call the caller function *)
-			[Sm5.CALL] in
-		Sonata.Fn (arg, trans' new_cmd)
-
+		Sonata.Fn (arg, new_cmd)
 
 (* TODO : complete this function *)
 and trans' : Sm5.command -> Sonata.command = function
@@ -59,15 +57,21 @@ and trans' : Sm5.command -> Sonata.command = function
 	let caller_ftn = Sonata.Fn("!arg", trans' cmds) in (* returning to the caller *)
 	(* store the stack top v and proc.
 	   don't need to store l, since a new location will be constructed *)
-	let new_cmd =  [Sonata.POP ; Sonata.BIND "!v" ; Sonata.BIND "!f"] @	
+	let new_cmd =  
+		[Sonata.MALLOC ; Sonata.BIND "!l" ; Sonata.PUSH(Sonata.Id "!l") ; Sonata.STORE;
+		Sonata.MALLOC ; Sonata.BIND "!v" ; Sonata.PUSH(Sonata.Id "!v") ; Sonata.STORE;
+		Sonata.MALLOC ; Sonata.BIND "!f" ; Sonata.PUSH(Sonata.Id "!f") ; Sonata.STORE] @	
 		(* pass the caller_ftn to the callee through the stack *)
 		[Sonata.PUSH caller_ftn] @
 		(* restore the proc and v *)
-		[Sonata.PUSH (Sonata.Id "!v") ; Sonata.PUSH (Sonata.Id "!f")] @
+		[Sonata.PUSH (Sonata.Id "!f") ; Sonata.LOAD;
+		Sonata.PUSH (Sonata.Id "!v") ; Sonata.LOAD; 
+		Sonata.PUSH (Sonata.Id "!l") ; Sonata.LOAD] @
 		(* unbind the temporary locations *)
 		[Sonata.UNBIND ; Sonata.POP ; Sonata.UNBIND ; Sonata.POP] @
+		[Sonata.UNBIND ; Sonata.POP ] @
 		(* Assign a new location for the parameter passing *)
-		[Sonata.MALLOC] @
+		(*[Sonata.MALLOC] @*)
 		(* Now, the stack top will be new_loc :: param :: callee_ftn *)
 		[Sonata.CALL] in
 	new_cmd
