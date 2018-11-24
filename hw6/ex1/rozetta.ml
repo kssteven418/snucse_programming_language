@@ -14,7 +14,23 @@ let rec trans_obj : Sm5.obj -> Sonata.obj = function
   | Sm5.Val v -> Sonata.Val (trans_v v)
   | Sm5.Id id -> Sonata.Id id
   (* TODO *)
-  | Sm5.Fn (arg, command) -> failwith "TODO : fill in here"
+	(* make caller calls callee and callee calls caller *)
+  | Sm5.Fn (arg, command) -> 
+		let new_cmd = 
+			(* first, store the caller function *)
+			[Sm5.BIND "!caller_ftn"] @
+			(* Now the stack is S, so execute the function command *)
+			command @
+			(* restore the caller function and unbind the temporary location *)
+			[Sm5.PUSH (Sm5.Id "!caller_ftn") ; Sm5.UNBIND ; Sm5.POP] @
+			(* push a garbage value *)
+			[Sm5.PUSH (Sm5.Val (Sm5.Unit))] @
+			(* push a garbage location *)
+			[Sm5.MALLOC] @
+			(* call the caller function *)
+			[Sm5.CALL] in
+		Sonata.Fn (arg, trans' new_cmd)
+
 
 (* TODO : complete this function *)
 and trans' : Sm5.command -> Sonata.command = function
@@ -25,7 +41,7 @@ and trans' : Sm5.command -> Sonata.command = function
 
   (* TODO : JTR *)
   | Sm5.JTR (c1, c2) :: cmds ->
-  	Sonata.JTR ((trans' c1), (trans' c2)) :: (trans' cmds)
+  	[Sonata.JTR (trans' (c1@cmds), trans' (c2@cmds))]
 
   | Sm5.MALLOC :: cmds -> Sonata.MALLOC :: (trans' cmds)
   | Sm5.BOX z :: cmds -> Sonata.BOX z :: (trans' cmds)
@@ -36,7 +52,25 @@ and trans' : Sm5.command -> Sonata.command = function
   | Sm5.PUT ::cmds -> Sonata.PUT :: (trans' cmds)
 	
   (* TODO : CALL *)
-  | Sm5.CALL :: cmds -> failwith "TODO : fill in here"
+  | Sm5.CALL :: cmds -> 
+	(* this caller function must be called
+	   at the end of the callee function
+		 to return to the 'cmds' *)
+	let caller_ftn = Sonata.Fn("!arg", trans' cmds) in (* returning to the caller *)
+	(* store the stack top v and proc.
+	   don't need to store l, since a new location will be constructed *)
+	let new_cmd =  [Sonata.POP ; Sonata.BIND "!v" ; Sonata.BIND "!f"] @	
+		(* pass the caller_ftn to the callee through the stack *)
+		[Sonata.PUSH caller_ftn] @
+		(* restore the proc and v *)
+		[Sonata.PUSH (Sonata.Id "!v") ; Sonata.PUSH (Sonata.Id "!f")] @
+		(* unbind the temporary locations *)
+		[Sonata.UNBIND ; Sonata.POP ; Sonata.UNBIND ; Sonata.POP] @
+		(* Assign a new location for the parameter passing *)
+		[Sonata.MALLOC] @
+		(* Now, the stack top will be new_loc :: param :: callee_ftn *)
+		[Sonata.CALL] in
+	new_cmd
 
   | Sm5.ADD :: cmds -> Sonata.ADD :: (trans' cmds)
   | Sm5.SUB :: cmds -> Sonata.SUB :: (trans' cmds)
@@ -49,4 +83,4 @@ and trans' : Sm5.command -> Sonata.command = function
 
 (* TODO : complete this function *)
 let trans : Sm5.command -> Sonata.command = fun command ->
-  failwith "TODO : fill in here"
+	trans' command
