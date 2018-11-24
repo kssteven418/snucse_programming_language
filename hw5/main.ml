@@ -3,7 +3,6 @@
  *
  * SM5
  *)
-(*
 
 open Translate
 open Pp
@@ -39,7 +38,7 @@ let main () =
     Sm5.run (Translator.trans pgm)
 
 let _ = main ()
-*)
+(*
 open Sm5.Sm5
 
 let _ = gc_mode := true
@@ -1064,4 +1063,5 @@ let _ = print_endline (string_of_bool (check_exception tcmd7)) (* true *)
 let _ = run tcmd8 (* 104 *)
 *)
 (*
+*)
 *)

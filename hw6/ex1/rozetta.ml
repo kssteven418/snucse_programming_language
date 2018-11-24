@@ -14,20 +14,30 @@ let rec trans_obj : Sm5.obj -> Sonata.obj = function
   | Sm5.Val v -> Sonata.Val (trans_v v)
   | Sm5.Id id -> Sonata.Id id
   (* TODO *)
-	(* make caller calls callee and callee calls caller *)
+	(* make sure that the callee function calls its caller at the end of the procedure 
+	   in order to return back to the caller side *)
   | Sm5.Fn (arg, command) -> 
-		let new_cmd = 
-			(* first, store the caller function *)
-			[Sonata.BIND "!caller_ftn"] @
-			(* Now the stack is S, so execute the function command *)
-			trans' command @
-			(* restore the caller function and unbind the temporary location *)
-			[Sonata.PUSH (Sonata.Id "!caller_ftn") ; Sonata.UNBIND ; Sonata.POP] @
-			(* push a garbage value *)
-			[Sonata.PUSH (Sonata.Val (Sonata.Unit))] @
-			(* push a garbage location *)
-			[Sonata.MALLOC; Sonata.CALL] in
-			(* call the caller function *)
+		let new_cmd = trans' (
+				(* right after the function call, the stack top is a caller_ftn,
+				   -> store this at the environment *)
+				[Sm5.BIND "!caller_ftn" ] @
+				(* execute the function body *)
+				command @
+				(* restore the caller_ftn *)
+				[Sm5.PUSH (Sm5.Id "!caller_ftn")] @
+				(* unbind unnecessary environment *)
+				[Sm5.UNBIND; Sm5.POP] @
+				(* push a trash value *)
+				[Sm5.PUSH (Sm5.Val Sm5.Unit)] @	
+				(* push a trash location *)
+				[Sm5.MALLOC] @
+
+				(* stack top will be trash_loc :: trash_val :: caller_ftn 
+				   caller_ftn is a simple return statement, so parameter passing is not required
+					 -> hence using trash location and value *)
+
+				(* this will simply translated to Sonata.CALL *)
+				[Sm5.CALL] ) in
 		Sonata.Fn (arg, new_cmd)
 
 (* TODO : complete this function *)
@@ -50,28 +60,35 @@ and trans' : Sm5.command -> Sonata.command = function
   | Sm5.PUT ::cmds -> Sonata.PUT :: (trans' cmds)
 	
   (* TODO : CALL *)
+	| Sm5.CALL :: [] -> [Sonata.CALL]
   | Sm5.CALL :: cmds -> 
-	(* this caller function must be called
-	   at the end of the callee function
-		 to return to the 'cmds' *)
+	
+	(* if the CALL function is at the end of the commands,
+	   then, does not need to come back to after the CALL.
+		 We simply end up the procedure at the callee part, w/o returning to the caller part.
+		 -> similar to "goto statement" *)
+	(* this will work same as return statement of functions *)
+	if cmds=[] then [Sonata.CALL]
+	
+	(* else, we do need to come back to the caller part after the CALL *)
+	else
+	(* this caller_ftn must be called at the end of the callee function
+		 to return bacj to the caller and execute the remaining commands (cmds) *)
 	let caller_ftn = Sonata.Fn("!arg", trans' cmds) in (* returning to the caller *)
-	(* store the stack top v and proc.
-	   don't need to store l, since a new location will be constructed *)
 	let new_cmd =  
+		(* store the stack top l, v and proc. *)
 		[Sonata.MALLOC ; Sonata.BIND "!l" ; Sonata.PUSH(Sonata.Id "!l") ; Sonata.STORE;
 		Sonata.MALLOC ; Sonata.BIND "!v" ; Sonata.PUSH(Sonata.Id "!v") ; Sonata.STORE;
 		Sonata.MALLOC ; Sonata.BIND "!f" ; Sonata.PUSH(Sonata.Id "!f") ; Sonata.STORE] @	
 		(* pass the caller_ftn to the callee through the stack *)
 		[Sonata.PUSH caller_ftn] @
-		(* restore the proc and v *)
+		(* restore the proc, v and l *)
 		[Sonata.PUSH (Sonata.Id "!f") ; Sonata.LOAD;
 		Sonata.PUSH (Sonata.Id "!v") ; Sonata.LOAD; 
 		Sonata.PUSH (Sonata.Id "!l") ; Sonata.LOAD] @
 		(* unbind the temporary locations *)
 		[Sonata.UNBIND ; Sonata.POP ; Sonata.UNBIND ; Sonata.POP] @
 		[Sonata.UNBIND ; Sonata.POP ] @
-		(* Assign a new location for the parameter passing *)
-		(*[Sonata.MALLOC] @*)
 		(* Now, the stack top will be new_loc :: param :: callee_ftn *)
 		[Sonata.CALL] in
 	new_cmd

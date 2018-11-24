@@ -1,0 +1,51 @@
+[push (x,
+  [bind f;
+  push x;
+  load;
+  malloc;
+  bind loc#;
+  push loc#;
+  store;
+  push loc#;
+  load;
+  push loc#;
+  load;
+  put;
+  unbind;
+  pop;
+  push x;
+  load;
+  push 1;
+  less;
+  jtr (
+    [push 0],
+    [push x;
+    load;
+    push f;
+    push f;
+    push x;
+    load;
+    push 1;
+    sub;
+    malloc;
+    call;
+    add])]
+  );
+bind f;
+push f;
+push f;
+push 10;
+malloc;
+call;
+malloc;
+bind loc#;
+push loc#;
+store;
+push loc#;
+load;
+push loc#;
+load;
+put;
+unbind;
+unbind;
+pop]
