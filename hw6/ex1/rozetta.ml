@@ -60,9 +60,7 @@ and trans' : Sm5.command -> Sonata.command = function
   | Sm5.PUT ::cmds -> Sonata.PUT :: (trans' cmds)
 	
   (* TODO : CALL *)
-	| Sm5.CALL :: [] -> [Sonata.CALL]
   | Sm5.CALL :: cmds -> 
-	
 	(* if the CALL function is at the end of the commands,
 	   then, does not need to come back to after the CALL.
 		 We simply end up the procedure at the callee part, w/o returning to the caller part.
@@ -89,7 +87,7 @@ and trans' : Sm5.command -> Sonata.command = function
 		(* unbind the temporary locations *)
 		[Sonata.UNBIND ; Sonata.POP ; Sonata.UNBIND ; Sonata.POP] @
 		[Sonata.UNBIND ; Sonata.POP ] @
-		(* Now, the stack top will be new_loc :: param :: callee_ftn *)
+		(* Now, the stack top will be l :: v :: f :: caller_ftn *)
 		[Sonata.CALL] in
 	new_cmd
 
