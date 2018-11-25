@@ -1,0 +1,10 @@
+(* test case 21 : K.LETF *)
+
+let fib := 12345 in
+write (
+    let proc fib (x) =
+		x
+    in
+    fib(10)
+);
+write (fib)

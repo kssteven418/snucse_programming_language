@@ -72,7 +72,14 @@ and trans' : Sm5.command -> Sonata.command = function
 	else
 	(* this caller_ftn must be called at the end of the callee function
 		 to return bacj to the caller and execute the remaining commands (cmds) *)
-	let caller_ftn = Sonata.Fn("!arg", trans' cmds) in (* returning to the caller *)
+
+	(* unbind !arg, !f, !v, and !l *)
+	let pop_cmd = 
+		[Sonata.UNBIND ; Sonata.POP;
+		Sonata.UNBIND ; Sonata.POP;
+		Sonata.UNBIND ; Sonata.POP;
+		Sonata.UNBIND ; Sonata.POP] in
+	let caller_ftn = Sonata.Fn("!arg", pop_cmd @ (trans' cmds)) in (* returning to the caller *)
 	let new_cmd =  
 		(* store the stack top l, v and proc. *)
 		[Sonata.MALLOC ; Sonata.BIND "!l" ; Sonata.PUSH(Sonata.Id "!l") ; Sonata.STORE;
@@ -103,3 +110,4 @@ and trans' : Sm5.command -> Sonata.command = function
 (* TODO : complete this function *)
 let trans : Sm5.command -> Sonata.command = fun command ->
 	trans' command
+

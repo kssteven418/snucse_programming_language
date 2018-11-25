@@ -1,0 +1,43 @@
+[push 12345;
+malloc;
+bind fib;
+push fib;
+store;
+push (x,
+  [bind fib;
+  push x;
+  load]
+  );
+bind fib;
+push fib;
+push fib;
+push 10;
+malloc;
+call;
+unbind;
+pop;
+malloc;
+bind loc#;
+push loc#;
+store;
+push loc#;
+load;
+push loc#;
+load;
+put;
+unbind;
+pop;
+push fib;
+load;
+malloc;
+bind loc#;
+push loc#;
+store;
+push loc#;
+load;
+push loc#;
+load;
+put;
+unbind;
+unbind;
+pop]
