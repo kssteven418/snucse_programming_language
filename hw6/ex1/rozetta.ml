@@ -19,14 +19,12 @@ let rec trans_obj : Sm5.obj -> Sonata.obj = function
   | Sm5.Fn (arg, command) -> 
 		let new_cmd = trans' (
 				(* right after the function call, the stack top is a caller_ftn,
-				   -> store this at the environment *)
-				[Sm5.BIND "!caller_ftn" ] @
+				   -> store this at gloabl variable *)
+				[Sm5.PUSH (Sm5.Id "!global"); Sm5.STORE ] @
 				(* execute the function body *)
 				command @
 				(* restore the caller_ftn *)
-				[Sm5.PUSH (Sm5.Id "!caller_ftn")] @
-				(* unbind unnecessary environment *)
-				[Sm5.UNBIND; Sm5.POP] @
+				[Sm5.PUSH (Sm5.Id "!global") ; Sm5.LOAD] @
 				(* push a trash value *)
 				[Sm5.PUSH (Sm5.Val Sm5.Unit)] @	
 				(* push a trash location *)
@@ -73,18 +71,27 @@ and trans' : Sm5.command -> Sonata.command = function
 	(* this caller_ftn must be called at the end of the callee function
 		 to return bacj to the caller and execute the remaining commands (cmds) *)
 
-	(* unbind !arg, !f, !v, and !l *)
 	let pop_cmd = 
+		(* unbind !arg, !f, !v, and !l *)
 		[Sonata.UNBIND ; Sonata.POP;
 		Sonata.UNBIND ; Sonata.POP;
 		Sonata.UNBIND ; Sonata.POP;
+		Sonata.UNBIND ; Sonata.POP;] @
+		(* restore the global variable that is stored in !ret *)
+		[Sonata.PUSH(Sonata.Id "!ret") ; Sonata.LOAD;
+		Sonata.PUSH(Sonata.Id "!global") ; Sonata.STORE; 
 		Sonata.UNBIND ; Sonata.POP] in
 	let caller_ftn = Sonata.Fn("!arg", pop_cmd @ (trans' cmds)) in (* returning to the caller *)
 	let new_cmd =  
+		(* this is for storing the global variable *)
+		[Sonata.MALLOC ; Sonata.BIND "!ret"; 
+		Sonata.PUSH(Sonata.Id "!global") ; Sonata.LOAD ;
+		Sonata.PUSH(Sonata.Id "!ret") ; Sonata.STORE ;
+		]@
 		(* store the stack top l, v and proc. *)
 		[Sonata.MALLOC ; Sonata.BIND "!l" ; Sonata.PUSH(Sonata.Id "!l") ; Sonata.STORE;
 		Sonata.MALLOC ; Sonata.BIND "!v" ; Sonata.PUSH(Sonata.Id "!v") ; Sonata.STORE;
-		Sonata.MALLOC ; Sonata.BIND "!f" ; Sonata.PUSH(Sonata.Id "!f") ; Sonata.STORE] @	
+		Sonata.MALLOC ; Sonata.BIND "!f" ; Sonata.PUSH(Sonata.Id "!f") ; Sonata.STORE] @
 		(* pass the caller_ftn to the callee through the stack *)
 		[Sonata.PUSH caller_ftn] @
 		(* restore the proc, v and l *)
@@ -92,8 +99,8 @@ and trans' : Sm5.command -> Sonata.command = function
 		Sonata.PUSH (Sonata.Id "!v") ; Sonata.LOAD; 
 		Sonata.PUSH (Sonata.Id "!l") ; Sonata.LOAD] @
 		(* unbind the temporary locations *)
-		[Sonata.UNBIND ; Sonata.POP ; Sonata.UNBIND ; Sonata.POP] @
-		[Sonata.UNBIND ; Sonata.POP ] @
+		[Sonata.UNBIND ; Sonata.POP ; Sonata.UNBIND ; Sonata.POP;
+		Sonata.UNBIND ; Sonata.POP ; Sonata.UNBIND ; Sonata.POP] @
 		(* Now, the stack top will be l :: v :: f :: caller_ftn *)
 		[Sonata.CALL] in
 	new_cmd
@@ -109,5 +116,8 @@ and trans' : Sm5.command -> Sonata.command = function
 
 (* TODO : complete this function *)
 let trans : Sm5.command -> Sonata.command = fun command ->
-	trans' command
+	(* global variable to store the caller_ftn *)
+	[ Sonata.MALLOC ; Sonata.BIND "!global" ; 
+	Sonata.PUSH (Sonata.Val (Sonata.Unit)); Sonata.PUSH (Sonata.Id "!global"); Sonata.STORE] @
+	(trans' command)
 
