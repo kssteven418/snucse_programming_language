@@ -29,11 +29,13 @@ echo "# Testing CPS-convert (${WARNING} Alpha ver. )"
 
 for TC in "${TESTCASES[@]}"
 do
+	echo ""
+	echo ""
     TFILE="${TESTDIR}/test${TC}"
     printf "Test %s..." "${TC}"
 
-    COMMCPS="./run -checkcps ${TFILE}.m"
-    COMMVAL="./run -checkval ${TFILE}.m"
+    COMMCPS="./run -pcps ${TFILE}.m"
+    COMMVAL="./run -pp ${TFILE}.m"
 
     FAIL=0
 
