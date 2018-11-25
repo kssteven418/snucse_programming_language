@@ -28,7 +28,7 @@ let run () =
       let _ = M_Printer.print pgm in
       print_newline()
     );
-    let _ = print_string "== Running with M Interpreter ==\n" in
+    (*let _ = print_string "== Running with M Interpreter ==\n" in*)
     M.run pgm
   with v -> Error.handle_exn v
 

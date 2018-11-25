@@ -31,28 +31,15 @@ for TC in "${TESTCASES[@]}"
 do
     TFILE="${TESTDIR}/test${TC}"
 
-    printf "Test %s..." "${TC}"
-
-    COMM="./run -resonly ${TFILE}.m > ${TFILE}.out"
+    printf "Test %s...\n" "${TC}" 
+	
+    COMM="./run ${TFILE}.m"
     if [ -f "${TFILE}.in" ]
     then
         COMM="${COMM} < ${TFILE}.in"
     fi
-
-    if eval "${COMM}"
-    then
-        if eval "diff ${TFILE}.ans ${TFILE}.out > /dev/null"
-        then
-            echo "${CORRECT}"
-        else
-            echo "${WRONG}"
-            echo "== Answer =="
-            cat "${TFILE}.ans"
-            echo "== Output =="
-            cat "${TFILE}.out"
-        fi
-    else
-        echo "${WRONG}"
-    fi
+    ${COMM}
+	echo "------------"
+	cat ${TFILE}.ans	
 done
 

@@ -141,7 +141,7 @@ struct
 						| Int n -> Bool (getInt v1 = getInt v2)
 						| String s -> Bool (getString v1 = getString v2)
 						| Bool b -> Bool (getBool v1 = getBool v2)
-						| Loc l -> Bool (getLoc v1 = getInt v2)
+						| Loc l -> Bool (getLoc v1 = getLoc v2)
 						|_ -> raise (TypeError "not comparable"))
 
   let rec printValue =
