@@ -38,12 +38,16 @@ module M : sig
 open M
 open Pp
 
+exception UnbindError
+
 type var = string
 
 let count = ref 0 
+let var_list = ref [] (* deb *)
 
 let new_var () = 
   let _ = count := !count +1 in
+	let _ = var_list := (!var_list)@["x_" ^ (string_of_int !count)] in (* deb *)
   "x_" ^ (string_of_int !count)
 
 type typ = 
@@ -54,7 +58,8 @@ type typ =
   | TLoc of typ
   | TFun of typ * typ
   | TVar of var
-	| TTypes of typ list
+	| TIBS (* int, bool, string *)
+	| TIBSL of typ (* int, bool, string, loc *)
   (* Modify, or add more if needed *)
 
 let rec str_of_type t = 
@@ -68,11 +73,8 @@ let rec str_of_type t =
   | TFun (t1, t2) -> 
 		"("^(str_of_type t1)^"->"^(str_of_type t2)^")"
   | TVar v -> v
-	| TTypes tl ->
-		let rec rf tl = 
-			if (List.length tl)==0 then ""
-			else (str_of_type (List.hd tl))^" "^(rf (List.tl tl)) in
-		"( "^(rf tl)^")"
+	| TIBS -> "(Int, Bool, String)"
+	| TIBSL v -> "(Int, Bool, String, "^(str_of_type v)^")"
 
 let print_type t =
 	let _ = print_endline (str_of_type t) in
@@ -156,7 +158,7 @@ let check : M.exp -> M.types = fun exp ->
 				| M.EQ -> 
 					let tau_loc = new_var() in
 					let tau' = new_var() in
-					[(TVar(tau'), TTypes([TInt; TBool; TString; TLoc (TVar tau_loc)]))] @
+					[(TVar(tau'), TIBSL(TLoc(TVar(tau_loc))))] @
 					v(gamma, e1, TVar(tau')) @
 					v(gamma, e2, TVar(tau')) @
 					[(tau, TBool)]
@@ -170,7 +172,7 @@ let check : M.exp -> M.types = fun exp ->
 		
 
 		| M.WRITE e -> 
-			[(tau, TTypes([TInt; TBool; TString]))] @
+			[(tau, TIBS)] @
 			v(gamma, e, tau)
 		
 		| M.MALLOC e ->
@@ -211,17 +213,107 @@ let check : M.exp -> M.types = fun exp ->
 
 		in
 
-	let init_gamma =  fun x -> TVar("") in 
+	let init_gamma =  fun x -> raise UnbindError in 
 	let init_tau = new_var() in
 	let equations = v(init_gamma, exp, TVar(init_tau)) in
+	
+	let g_decl = ref (fun x ->  0) in
+	let g_ans = ref (fun x -> raise UnbindError) in
 
-	(* SOLVE` EQUATIONS *)
-	let same (t1, t2, ans) = 
-		match t1 with
-		| TInt -> 
-			(match t2 with 
-			 | TInt -> true 
-			 | _ -> false
-			)
+	let declare (decl, ans, v, t) = 
+		let decl_temp = fun x -> if x=v then 1 else (decl x) in
+		let ans_temp = fun x -> if x=v then t else (ans x) in 
+		(decl_temp, ans_temp)
+	in
 
-  raise (M.TypeError "Type Checker Unimplemented")
+
+	(* SOLVE EQUATIONS *)
+	let rec iterate (eq, decl, ans) = 
+		if (List.length eq)=0 then []
+		else 
+			(* TVar and TTypes must be the fst element *)
+			(* if tie, then TVar is the fst elmt, and the TTypes is the snd *)
+			let (t1, t2) = (List.hd eq) in
+			(*
+			let (t1, t2) =
+			match t2 with 
+				| TTypes tt -> (t2, t1)
+				| _ -> (t1, t2) in
+			*)
+			let (t1, t2) =
+			match t2 with 
+				| TVar v -> (t2, t1)
+				| _ -> (t1, t2) in
+			(*
+				let _ = print_equ [(t1, t2)] in
+			iterate((List.tl eq), ans) 
+			*)
+			match t1 with
+				| TInt -> 
+				(match t2 with 
+			 		| TInt -> iterate((List.tl eq), decl, ans)
+			 		| _ -> raise(M.TypeError "Expecting integer")
+				)
+
+				| TBool ->
+				(match t2 with 
+			 		| TBool -> iterate((List.tl eq), decl, ans)
+			 		| _ -> raise(M.TypeError "Expecting boolean")
+				)
+
+				| TString ->
+				(match t2 with 
+			 		| TString -> iterate((List.tl eq), decl, ans)
+			 		| _ -> raise(M.TypeError "Expecting string")
+				)
+
+				| TPair (p1, p2) ->
+				(match t2 with
+				 	| TPair (p1', p2') -> [(p1, p1');(p2, p2')] @ iterate((List.tl eq), decl, ans)
+					| _ -> raise(M.TypeError "Expecting pair")
+				)
+
+				| TLoc l ->
+				(match t2 with
+				 	| TLoc l' -> [(l, l')] @ iterate((List.tl eq), decl, ans)
+					| _ -> raise(M.TypeError "Expecting location")
+				)
+
+				| TFun (f1, f2) ->
+				(match t2 with 
+				 	| TFun (f1', f2') -> [(f1, f1');(f2, f2')] @ iterate((List.tl eq), decl, ans)
+					| _ -> raise(M.TypeError "Expecting function")  
+				)
+				| TVar v ->
+					(* if not declared yet *)
+					if (decl v) = 0 then 
+						let (decl', ans') = declare (decl, ans, v, t2) in 
+						let _ = g_decl := decl' in
+						let _ = g_ans := ans' in
+						iterate((List.tl eq), decl', ans')
+					(* if declared *)
+					else
+						[(ans v, t2)] @ iterate((List.tl eq), decl, ans)
+
+	in
+
+	let rec print_ans vl = 
+		if (List.length vl)=0 then ()
+		else let v = (List.hd vl) in
+			 if (!g_decl v)=1 then 
+			 	let _ = print_endline v in
+				let _ = print_type (!g_ans v) in (print_ans (List.tl vl))
+			else (print_ans (List.tl vl)) in
+
+	let decl_init = fun x ->  0 in
+	let ans_init = fun x -> raise UnbindError in
+
+	let _ = print_equ equations in
+  let e' = iterate (equations, decl_init, ans_init) in
+	let _ = print_endline "==ANS==" in
+	let _ = print_ans !var_list in
+	let _ = print_endline "" in
+	let _ = print_equ e' in
+	
+	raise (M.TypeError "Type Checker Unimplemented")
+
