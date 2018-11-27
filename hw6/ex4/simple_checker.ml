@@ -54,16 +54,52 @@ type typ =
   | TLoc of typ
   | TFun of typ * typ
   | TVar of var
+	| TTypes of typ list
   (* Modify, or add more if needed *)
 
+let rec str_of_type t = 
+	match t with 
+  | TInt -> "Int"
+  | TBool -> "Bool"
+  | TString -> "String"
+  | TPair (t1, t2) -> 
+		"("^(str_of_type t1)^", "^(str_of_type t2)^")"
+  | TLoc t -> "Loc "^(str_of_type t)
+  | TFun (t1, t2) -> 
+		"("^(str_of_type t1)^"->"^(str_of_type t2)^")"
+  | TVar v -> v
+	| TTypes tl ->
+		let rec rf tl = 
+			if (List.length tl)==0 then ""
+			else (str_of_type (List.hd tl))^" "^(rf (List.tl tl)) in
+		"( "^(rf tl)^")"
+
+let print_type t =
+	let _ = print_endline (str_of_type t) in
+	()
+
+let rec str_of_equ equ =
+	if (List.length equ)=0 then ""
+	else
+		let (t1, t2) = List.hd equ in
+		let str = "["^(str_of_type t1)^", "^(str_of_type t2)^"]" in
+		str^" "^(str_of_equ (List.tl equ))
+
+let print_equ equ = 
+	let _ = print_endline (str_of_equ equ) in 
+	()
+
 (* id to variable *)
-type glist = M.id -> string
+type glist = M.id -> typ
 type equ = typ * typ
 
 (* TODO : Implement this function *)
 let check : M.exp -> M.types = fun exp ->
 	(* bind x|->tau at gamma *)
-	let bind (gamma, x, tau) = fun t -> if t=x then tau else (gamma x) in
+	let bind (gamma, x, tau) = fun t -> if t=x then tau else (gamma t) in
+
+
+	(* BUILD EQUATIONS *)
 
 	let rec v : glist * M.exp * typ -> equ list = fun (gamma, e, tau) ->
 		match e with
@@ -75,12 +111,12 @@ let check : M.exp -> M.types = fun exp ->
 				| M.B b -> [(tau, TBool)] 
 			)
 		
-		| M.VAR x -> [(tau, TVar(gamma x))]
+		| M.VAR x -> [(tau, (gamma x))]
 		
 		| M.FN (x, exp) -> 
 			let tau1 = new_var() in
 			let tau2 = new_var() in
-			let new_gamma = bind (gamma, x, tau1) in
+			let new_gamma = bind (gamma, x, TVar(tau1)) in
 			[(tau, TFun(TVar(tau1), TVar(tau2)))] @ (* t = t1->t2 *)
 			(v(new_gamma, exp, TVar(tau2))) (* x : a1 then exp must be a2 *)
 
@@ -91,10 +127,17 @@ let check : M.exp -> M.types = fun exp ->
 		
 		| M.LET (d, e2) ->
 			(match d with
-			| M.REC (f, x, e1) -> [] (* TODO *)
+			| M.REC (f, x, e1) -> 
+				let tau1 = new_var() in
+				let tau2 = new_var() in
+				let gamma_f = bind(gamma, f, TFun(TVar(tau1), TVar(tau2))) in
+				let gamma_fx = bind(gamma_f, x, TVar(tau1)) in
+				v(gamma_fx, e1, TVar(tau2)) 
+				@v(gamma_f, e2, tau)
+
 			| M.VAL (x, e1) -> 
 				let tau1 = new_var() in
-				let new_gamma = bind (gamma, x, tau1) in
+				let new_gamma = bind (gamma, x, TVar(tau1)) in
 				v(gamma, e1, TVar(tau1)) @
 				v(new_gamma, e2, tau)
 			)
@@ -104,11 +147,31 @@ let check : M.exp -> M.types = fun exp ->
 			v(gamma, e2, tau) @
 			v(gamma, e3, tau)
 
-		| M.BOP (op, e1, e2) -> [] (* TODO *)
+		| M.BOP (op, e1, e2) -> 
+			(match op with 
+				| M.ADD -> 
+					[(tau, TInt)] @ v(gamma, e1, TInt) @ v(gamma, e2, TInt)
+				| M.SUB ->
+					[(tau, TInt)] @ v(gamma, e1, TInt) @ v(gamma, e2, TInt)
+				| M.EQ -> 
+					let tau_loc = new_var() in
+					let tau' = new_var() in
+					[(TVar(tau'), TTypes([TInt; TBool; TString; TLoc (TVar tau_loc)]))] @
+					v(gamma, e1, TVar(tau')) @
+					v(gamma, e2, TVar(tau')) @
+					[(tau, TBool)]
+				| M.AND -> 
+					[(tau, TBool)] @ v(gamma, e1, TBool) @ v(gamma, e2, TBool)
+				| M.OR ->
+					[(tau, TBool)] @ v(gamma, e1, TBool) @ v(gamma, e2, TBool)
+			)
 
 		| M.READ -> [(tau, TInt)]
+		
 
-		| M.WRITE e -> [] (* TODO *)
+		| M.WRITE e -> 
+			[(tau, TTypes([TInt; TBool; TString]))] @
+			v(gamma, e, tau)
 		
 		| M.MALLOC e ->
 			let tau1 = new_var() in
@@ -120,14 +183,12 @@ let check : M.exp -> M.types = fun exp ->
 			v(gamma, e2, tau)
 
 		| M.BANG e ->
-			let tau1 = new_var() in
-			v(gamma, e, TVar(tau1))
+			v(gamma, e, TLoc(tau))
 
 		| M.SEQ (e1, e2) ->
 			let tau1 = new_var() in
-			let tau2 = new_var() in
 			v(gamma, e, TVar(tau1)) @
-			v(gamma, e, TVar(tau2))
+			v(gamma, e, tau)
 			
 		| M.PAIR (e1, e2) ->
 			let tau1 = new_var() in
@@ -135,12 +196,32 @@ let check : M.exp -> M.types = fun exp ->
 			[(tau, TPair(TVar(tau1), TVar(tau2)))] @
 			v(gamma, e1, TVar(tau1)) @
 			v(gamma, e2, TVar(tau2))
+		
+		| M.FST e ->
+			let tau1 = new_var() in
+			let tau2 = new_var() in
+			[(TVar(tau1), TPair(tau, TVar(tau2)))] @
+			v(gamma, e, TVar(tau1))
 
+		| M.SND e ->
+			let tau1 = new_var() in
+			let tau2 = new_var() in
+			[(TVar(tau1), TPair(TVar(tau2), tau))] @
+			v(gamma, e, TVar(tau1))
 
-
- 		| _ -> failwith "Unimplemented" 
 		in
 
-	let equations = [] in
+	let init_gamma =  fun x -> TVar("") in 
+	let init_tau = new_var() in
+	let equations = v(init_gamma, exp, TVar(init_tau)) in
+
+	(* SOLVE` EQUATIONS *)
+	let same (t1, t2, ans) = 
+		match t1 with
+		| TInt -> 
+			(match t2 with 
+			 | TInt -> true 
+			 | _ -> false
+			)
 
   raise (M.TypeError "Type Checker Unimplemented")
