@@ -310,6 +310,10 @@ let check : M.exp -> M.types = fun exp ->
 		else let e = iterate (eq, !g_decl, !g_ans) in
 			solve_equation e in
 
+
+	
+		
+
 	(* debuggin purpose *)
 	let rec print_ans vl = 
 		if (List.length vl)=0 then ()
