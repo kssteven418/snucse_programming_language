@@ -38,7 +38,8 @@ module M : sig
 open M
 open Pp
 
-exception UnbindError
+exception UnbindError1
+exception UnbindError2
 
 type var = string
 
@@ -101,10 +102,10 @@ let check : M.exp -> M.types = fun exp ->
 	let bind (gamma, x, tau) = fun t -> if t=x then tau else (gamma t) in
 
 
-	(* BUILD EQUATIONS *)
+	(* PHASE 1 : BUILD EQUATIONS *)
 
 	(* stores type constraints *)
-	let type_constraint = ref [] in
+	let type_constraints = ref [] in
 
 	let rec v : glist * M.exp * typ -> equ list = fun (gamma, e, tau) ->
 		match e with
@@ -160,8 +161,8 @@ let check : M.exp -> M.types = fun exp ->
 					[(tau, TInt)] @ v(gamma, e1, TInt) @ v(gamma, e2, TInt)
 				| M.EQ -> 
 					let tau' = new_var() in
-					let _ = type_constraint := 
-						(!type_constraint)@[(TVar(tau'), IBSL)] in
+					let _ = type_constraints := 
+						(!type_constraints)@[(TVar(tau'), IBSL)] in
 					v(gamma, e1, TVar(tau')) @
 					v(gamma, e2, TVar(tau')) @
 					[(tau, TBool)]
@@ -174,8 +175,8 @@ let check : M.exp -> M.types = fun exp ->
 		| M.READ -> [(tau, TInt)]
 
 		| M.WRITE e -> 
-				let _ = type_constraint := 
-					(!type_constraint)@[(tau, IBS)] in
+				let _ = type_constraints := 
+					(!type_constraints)@[(tau, IBS)] in
 			v(gamma, e, tau)
 		
 		| M.MALLOC e ->
@@ -192,8 +193,8 @@ let check : M.exp -> M.types = fun exp ->
 
 		| M.SEQ (e1, e2) ->
 			let tau1 = new_var() in
-			v(gamma, e, TVar(tau1)) @
-			v(gamma, e, tau)
+			v(gamma, e1, TVar(tau1)) @
+			v(gamma, e2, tau)
 			
 		| M.PAIR (e1, e2) ->
 			let tau1 = new_var() in
@@ -216,12 +217,15 @@ let check : M.exp -> M.types = fun exp ->
 
 		in
 
-	let init_gamma =  fun x -> raise UnbindError in 
+	let init_gamma =  fun x -> 
+	let _ = print_endline x in
+	raise UnbindError1 in 
+
 	let init_tau = new_var() in
 	let equations = v(init_gamma, exp, TVar(init_tau)) in
 	
 	let g_decl = ref (fun x ->  0) in
-	let g_ans = ref (fun x -> raise UnbindError) in
+	let g_ans = ref (fun x -> raise UnbindError2) in
 
 	let declare (decl, ans, v, t) = 
 		let decl_temp = fun x -> if x=v then 1 else (decl x) in
@@ -229,8 +233,19 @@ let check : M.exp -> M.types = fun exp ->
 		(decl_temp, ans_temp)
 	in
 
+	(* debuggin purpose *)
+	let rec print_ans vl = 
+		if (List.length vl)=0 then ()
+		else let v = (List.hd vl) in
+			 if (!g_decl v)=1 then 
+			 	let _ = print_endline "" in
+			 	let _ = print_endline v in
+				let _ = print_type (!g_ans v) in (print_ans (List.tl vl))
 
-	(* SOLVE EQUATIONS *)
+			else (print_ans (List.tl vl)) in
+
+
+	(* PHASE 2 : SOLVE EQUATIONS *)
 	let rec iterate (eq, decl, ans) = 
 		if (List.length eq)=0 then []
 		else 
@@ -306,13 +321,15 @@ let check : M.exp -> M.types = fun exp ->
 	in
 
 	let rec solve_equation eq = 	
+		let _ = print_equ eq in
+		let _ = print_endline "---------------" in 
+		let _ = print_ans !var_list in
+		let _ = print_endline "---------------" in 
 		if (List.length eq) = 0 then ()
 		else let e = iterate (eq, !g_decl, !g_ans) in
 			solve_equation e in
 
 
-	
-		
 
 	(* debuggin purpose *)
 	let rec print_ans vl = 
@@ -323,56 +340,86 @@ let check : M.exp -> M.types = fun exp ->
 				let _ = print_type (!g_ans v) in (print_ans (List.tl vl))
 			else (print_ans (List.tl vl)) in
 
-	let _ = solve_equation equations in
+	(* PHASE 3 : PROPAGATE SOLUTIONS *)
+
+	let stop = ref true in
+
+	let rec fill (vl, decl, ans) =
+		if (List.length vl)=0 then (decl, ans)
+
+		else let v = List.hd vl in
+			if (decl v)=0 then fill ((List.tl vl), decl, ans)
+			else let t = ans v in
+
+				let rec change t' =
+					match t' with 
+					| TVar v' ->
+						if (decl v')=1 then 
+							(* avoid recursive type definition. e.g. x = pair(x, y) *)
+							if v'=v then raise(M.TypeError "Recursive definition")
+							else let _ = stop := false in ans v'
+						else TVar v'
+					| TPair (p1, p2) -> TPair(change p1, change p2)
+					| TLoc l -> TLoc (change l)
+					| TFun (f1, f2) -> TFun (change f1, change f2)
+					| _ -> t'
+				in
+				
+			let new_t = change t in
+			let new_ans = fun x -> if x=v then new_t else ans x in
+		fill ((List.tl vl), decl, new_ans)	in
+
+
+	let rec fill_all (vl, decl, ans) =
+
+		let _ = stop := true in
+		let (_, new_ans) = fill (!var_list, decl, ans) in
+		
+		if !stop then (decl, ans)
+		else fill_all(vl, decl, new_ans) in
+
+	
+	(* PHASE 4 : CHECK THE CONSTRAINTS *)
+	
+	let rec check_constraints tc =
+		if (List.length tc)=0 then ()
+		else let (t, c) = List.hd tc in
+			match t with 
+			| TVar v -> 
+				if (!g_decl v) = 0 then check_constraints (List.tl tc)
+				else let type_v = !g_ans v in
+					(match type_v with
+					 	| TInt -> check_constraints (List.tl tc)
+						| TBool -> check_constraints (List.tl tc)
+						| TString -> check_constraints (List.tl tc)
+						| TLoc l -> 
+							(match c with
+							 | IBS -> raise(M.TypeError "Write / EquOp Error")
+							 | IBSL -> check_constraints (List.tl tc)
+							)
+						| _ ->  raise(M.TypeError "Write / EquOp Error")
+					)
+			| _ -> check_constraints (List.tl tc)
+		in
+
 	let _ = print_equ equations in
+	let _ = solve_equation equations in
+
+	let _ = print_endline "" in
 	
-	let _ = print_endline "==ANS==" in
+	let _ = print_endline "==ANS before propagation==" in
 	let _ = print_ans !var_list in
 	let _ = print_endline "" in
+
+	let (_, new_ans) = fill_all(!var_list, !g_decl, !g_ans) in
+	let _ = g_ans := new_ans in
+
+	let _ = print_endline "==ANS after propagation==" in
+	let _ = print_ans !var_list in
+	let _ = print_endline "" in
+
+	let _ = check_constraints !type_constraints in
+
 	raise (M.TypeError "Type Checker Unimplemented")
-	(*
-  let e' = iterate (equations, !g_decl, !g_ans) in
-	let _ = print_endline "==ANS==" in
-	let _ = print_ans !var_list in
-	let _ = print_endline "" in
-	let _ = print_equ e' in
-	
-	let _ = print_endline "" in
-  let e' = iterate (e', !g_decl, !g_ans) in
-	let _ = print_endline "==ANS==" in
-	let _ = print_ans !var_list in
-	let _ = print_endline "" in
-	let _ = print_equ e' in
-	let _ = print_endline "" in
-  let e' = iterate (e', !g_decl, !g_ans) in
-	let _ = print_endline "==ANS==" in
-	let _ = print_ans !var_list in
-	let _ = print_endline "" in
-	let _ = print_equ e' in
-	let _ = print_endline "" in
-  let e' = iterate (e', !g_decl, !g_ans) in
-	let _ = print_endline "==ANS==" in
-	let _ = print_ans !var_list in
-	let _ = print_endline "" in
-	let _ = print_equ e' in
-	let _ = print_endline "" in
-  let e' = iterate (e', !g_decl, !g_ans) in
-	let _ = print_endline "==ANS==" in
-	let _ = print_ans !var_list in
-	let _ = print_endline "" in
-	let _ = print_equ e' in
-	let _ = print_endline "" in
-  let e' = iterate (e', !g_decl, !g_ans) in
-	let _ = print_endline "==ANS==" in
-	let _ = print_ans !var_list in
-	let _ = print_endline "" in
-	let _ = print_equ e' in
-	let _ = print_endline "" in
-  let e' = iterate (e', !g_decl, !g_ans) in
-	let _ = print_endline "==ANS==" in
-	let _ = print_ans !var_list in
-	let _ = print_endline "" in
-	let _ = print_equ e' in
-	raise (M.TypeError "Type Checker Unimplemented")
-	*)
+
 
