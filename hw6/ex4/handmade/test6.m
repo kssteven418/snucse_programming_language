@@ -4,3 +4,4 @@ let val f2 = fn y => y 10 in
 	f2 f1; f2 f1
 end
 end
+(* int *)

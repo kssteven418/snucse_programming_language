@@ -10,3 +10,5 @@ let val f = fn x =>
 h f
 end
 end
+
+(* int *)

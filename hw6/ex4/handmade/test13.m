@@ -5,4 +5,4 @@ let val f = fn x=>x in
 f2 (f, 1) 
 end
 end
-
+(* int *)

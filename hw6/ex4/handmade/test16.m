@@ -6,3 +6,5 @@ let rec f = fn x =>
 	else f x in
 f 10
 end
+
+(* type error *)

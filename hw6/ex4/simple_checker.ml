@@ -245,7 +245,47 @@ let check : M.exp -> M.types = fun exp ->
 			else (print_ans (List.tl vl)) in
 
 
+	(* PHASE 3 : PROPAGATE SOLUTIONS *)
+
+	let stop = ref true in
+
+	let rec fill (vl, decl, ans) =
+		if (List.length vl)=0 then (decl, ans)
+
+		else let v = List.hd vl in
+			if (decl v)=0 then fill ((List.tl vl), decl, ans)
+			else let t = ans v in
+
+				let rec change t' =
+					match t' with 
+					| TVar v' ->
+						if (decl v')=1 then 
+							(* avoid recursive type definition. e.g. x = pair(x, y) *)
+							if v'=v then raise(M.TypeError "Recursive definition")
+							else let _ = stop := false in ans v'
+						else TVar v'
+					| TPair (p1, p2) -> TPair(change p1, change p2)
+					| TLoc l -> TLoc (change l)
+					| TFun (f1, f2) -> TFun (change f1, change f2)
+					| _ -> t'
+				in
+				
+			let new_t = change t in
+			let new_ans = fun x -> if x=v then new_t else ans x in
+		fill ((List.tl vl), decl, new_ans)	in
+
+
+	let rec fill_all (vl, decl, ans) =
+
+		let _ = stop := true in
+		let (_, new_ans) = fill (!var_list, decl, ans) in
+		
+		if !stop then (decl, ans)
+		else fill_all(vl, decl, new_ans) in
+
+
 	(* PHASE 2 : SOLVE EQUATIONS *)
+
 	let rec iterate (eq, decl, ans) = 
 		if (List.length eq)=0 then []
 		else 
@@ -321,14 +361,17 @@ let check : M.exp -> M.types = fun exp ->
 	in
 
 	let rec solve_equation eq = 	
+		(*
 		let _ = print_equ eq in
 		let _ = print_endline "---------------" in 
 		let _ = print_ans !var_list in
 		let _ = print_endline "---------------" in 
+		*)
 		if (List.length eq) = 0 then ()
 		else let e = iterate (eq, !g_decl, !g_ans) in
+			let (_, new_ans) = fill_all(!var_list, !g_decl, !g_ans) in
+			let _ = g_ans := new_ans in
 			solve_equation e in
-
 
 
 	(* debuggin purpose *)
@@ -339,44 +382,6 @@ let check : M.exp -> M.types = fun exp ->
 			 	let _ = print_endline v in
 				let _ = print_type (!g_ans v) in (print_ans (List.tl vl))
 			else (print_ans (List.tl vl)) in
-
-	(* PHASE 3 : PROPAGATE SOLUTIONS *)
-
-	let stop = ref true in
-
-	let rec fill (vl, decl, ans) =
-		if (List.length vl)=0 then (decl, ans)
-
-		else let v = List.hd vl in
-			if (decl v)=0 then fill ((List.tl vl), decl, ans)
-			else let t = ans v in
-
-				let rec change t' =
-					match t' with 
-					| TVar v' ->
-						if (decl v')=1 then 
-							(* avoid recursive type definition. e.g. x = pair(x, y) *)
-							if v'=v then raise(M.TypeError "Recursive definition")
-							else let _ = stop := false in ans v'
-						else TVar v'
-					| TPair (p1, p2) -> TPair(change p1, change p2)
-					| TLoc l -> TLoc (change l)
-					| TFun (f1, f2) -> TFun (change f1, change f2)
-					| _ -> t'
-				in
-				
-			let new_t = change t in
-			let new_ans = fun x -> if x=v then new_t else ans x in
-		fill ((List.tl vl), decl, new_ans)	in
-
-
-	let rec fill_all (vl, decl, ans) =
-
-		let _ = stop := true in
-		let (_, new_ans) = fill (!var_list, decl, ans) in
-		
-		if !stop then (decl, ans)
-		else fill_all(vl, decl, new_ans) in
 
 	
 	(* PHASE 4 : CHECK THE CONSTRAINTS *)
@@ -402,24 +407,43 @@ let check : M.exp -> M.types = fun exp ->
 			| _ -> check_constraints (List.tl tc)
 		in
 
-	let _ = print_equ equations in
+	(* 
+	 let _ = print_equ equations in
+	*)
 	let _ = solve_equation equations in
 
+	(*	
 	let _ = print_endline "" in
-	
 	let _ = print_endline "==ANS before propagation==" in
 	let _ = print_ans !var_list in
 	let _ = print_endline "" in
+	*)
 
 	let (_, new_ans) = fill_all(!var_list, !g_decl, !g_ans) in
 	let _ = g_ans := new_ans in
-
+	
+	(*
 	let _ = print_endline "==ANS after propagation==" in
 	let _ = print_ans !var_list in
 	let _ = print_endline "" in
-
+	*)
 	let _ = check_constraints !type_constraints in
 
-	raise (M.TypeError "Type Checker Unimplemented")
+	(* OUTPUT *)
+	let rec convert t = 
+		match t with
+		| TInt -> M.TyInt
+		| TBool -> M.TyBool
+		| TString -> M.TyString
+		| TPair (p1, p2) -> M.TyPair(convert p1, convert p2)
+		| TLoc l -> M.TyLoc(convert l)
+		| TFun (f1, f2) -> M.TyArrow(convert f1, convert f2)
+		| _ -> raise (M.TypeError"Incomplete type") 
+	in
+
+	if (!g_decl "x_1")=0 then raise (M.TypeError "Incomplete type") 
+	else let final_type = !g_ans "x_1" in
+		convert final_type
+
 
 
