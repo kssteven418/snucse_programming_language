@@ -10,56 +10,136 @@ open Xexp
 let cntf = ref 0 
 let cntv = ref 0 
 
-let unused_i = -1278643 
-let unused = Num(unused_i) 
 
-
-let fname = 
-	let temp = "!@#$%^&*&^%$#@#$%^&*"^(string_of_int !cntf) in
-	let _ = cntf := !cntf+1 in
-	temp
-
-let vname x = 
-	let temp = "tt"^(string_of_int !cntv) in
+let vname () = 
+	let temp = "!@#$"^(string_of_int !cntv) in
 	let _ = cntv := !cntv+1 in
 	temp
 
-(* LET x = e1 in e2 *)
-let letx (x, e1, e2) = 
-	App (Fn (x, e2), e1)
+let unused_i = 201812
+let unused = let k = vname() in Fn (k, App (Var k, Num unused_i))
 
-(* e 0 will be handler number, e 1 will be the true value *)
-let build_ftn (e, n) =
-	let v = vname 0 in
-		Fn(v, If(Var(v), e, n))
+(*
+
 
 (* is the sub expression was ended successful? *)
 (* if successful, than the v[0] should be intact with unused value *)
 let is_successful v =
 	Equal(App(Var v, Equal(Num 1, Num 0)), unused)
 
+let is_match (v, w)  =
+	Equal(App(v, Equal(Num 1, Num 0)), App(w, Equal(Num 1, Num 0)))
+
+let get_num v = 
+	App(Var v, Equal(Num 1, Num 0))
+
 (* the original value is kept in v[1] *)
 let value v = App(Var v, Equal(Num 1, Num 1)) 
 
-let rec removeIter : xexp -> xexp = fun e ->
+*)
+let rec print e =
 	match e with 
+	| Num n -> string_of_int n
+	| Var v -> v
+	| Fn (x, e') -> x^"->"^(print e')
+	| App (e1, e2) -> "(("^(print e1)^") ("^(print e2)^"))"
+	| If (e1, e2, e3) -> "if ( "^(print e1)^" ) \n then( "^(print e2)^" ) \n else( "^(print e3)^" )"
+	| Equal (e1, e2) -> "("^(print e1)^" = "^(print e2)^")"
+	| _ -> "Non"
+
+(* LET x = e1 in e2 *)
+let letx (x, e1, e2) = 
+	App (Fn (x, e2), e1)
+
+let one_f = let k = vname() in Fn(k, App(Var k, Num 1)) 
+let zero_f = let k = vname() in Fn(k, App(Var k, Num 0)) 
+let true_f = 
+	let k = vname() in 
+	let v1 = vname() in
+	let v2 = vname() in
+		Fn(k, App(one_f, 
+							Fn(v1, App(one_f,
+											Fn(v2, App(Var k, Equal(Var v1, Var v2)))))))
+let false_f = 
+	let k = vname() in 
+	let v1 = vname() in
+	let v2 = vname() in
+		Fn(k, App(one_f, 
+							Fn(v1, App(zero_f,
+											Fn(v2, App(Var k, Equal(Var v1, Var v2)))))))
+
+(* will be binded later *)
+let one_v = vname()
+let zero_v = vname()
+let true_v = vname()
+let false_v = vname()
+
+let rec cps : xexp -> xexp = fun e ->
+
+	let k = vname() in
+
+(* e 0 will be handler number, e 1 will be the true value *)
+	let build_ftn (e', n) =
+		let v = vname () in
+		let k = vname () in
+		let k1 = vname () in
+		let k2 = vname () in
+		let n' = Fn (k2, App (Var k, n)) in
+		let body =
+			Fn(k, App(Var k, Fn(v,
+						Fn(k1, App(e', Fn(k1, If(Var k1, e', n'))))))) in
+		body in
+
+	match e with 
+	| Num n -> 
+		let n' = Fn (k, App (Var k, Num n)) in
+		build_ftn(n', unused)
+	
+	| Var v ->
+		let v' = Fn (k, App (Var k, Var v)) in
+		build_ftn(v', unused)
+
+	|_ -> e
+
+let removeExn : xexp -> xexp = fun e ->
+	let k = vname() in
+	let temp = 
+		App((App(cps e, Fn(k, Var k))), true_f) in
+	let _ = print_endline(print temp) in
+
+	temp
+		(*
 	| Num n -> 
 		let _ = print_endline "NUM" in
 		build_ftn (Num n, unused)
+
 	| Var v -> 
 		let _ = print_endline "VAR" in
 		build_ftn (Var v, unused)
+
 	| Fn (x, e) -> 
-		let _ = print_endline "FN" in
-		removeIter e
+		let e' = removeIter e in
+		let y = vname 0 in
+		let _ = print_endline ("FN "^y) in
+
+		let final = Fn(x, value y) in
+
+		let body = If(is_successful y, build_ftn(final, unused), Var y) in
+		letx(y, e', body)
+
 	| App (e1, e2) ->
-		let _ = print_endline "APP" in
 		let e1' = removeIter e1 in
 		let e2' = removeIter e2 in
 		(* x <- e1' *)
 		(* y <- e2' *)
 		let x = vname 0 in
 		let y = vname 0 in
+		let _ = print_endline ("APP "^x^" "^y) in
+		
+		let _ = print_endline (print e1') in
+		let _ = print_endline "" in
+		let _ = print_endline (print e2') in
+		let _ = print_endline "" in
 
 		let final = App(value x, value y) in
 
@@ -70,7 +150,6 @@ let rec removeIter : xexp -> xexp = fun e ->
 		letx(x, e1', body)
 
 	| If (e1, e2, e3) ->
-		let _ = print_endline "IF" in
 		let e1' = removeIter e1 in
 		let e2' = removeIter e2 in
 		let e3' = removeIter e3 in
@@ -80,6 +159,7 @@ let rec removeIter : xexp -> xexp = fun e ->
 		let x = vname 0 in
 		let y = vname 0 in
 		let z = vname 0 in
+		let _ = print_endline ("IF "^x^" "^y^" "^z) in
 
 		let final = If(value x, value y, value z) in
 		
@@ -93,13 +173,13 @@ let rec removeIter : xexp -> xexp = fun e ->
 		letx(x, e1', body)
 
 	| Equal (e1, e2) ->
-		let _ = print_endline "EQUAL" in
 		let e1' = removeIter e1 in
 		let e2' = removeIter e2 in
 		(* x <- e1' *)
 		(* y <- e2' *)
 		let x = vname 0 in
 		let y = vname 0 in
+		let _ = print_endline ("EQUAL "^x^" "^y) in
 
 		let final = Equal(value x, value y) in
 
@@ -110,24 +190,31 @@ let rec removeIter : xexp -> xexp = fun e ->
 		letx(x, e1', body)
 
 	| Raise e -> 
-		let _ = print_endline "RAISE" in
 		let e' = removeIter e in
 		(* x <- e' *)
 		let x = vname 0 in
+		let _ = print_endline ("RAISE "^x) in
+
 		let final = value x in
 		
-		let body = If(is_successful x, build_ftn(Num 0, final), Var x) in
-		(match final with
-		| Num n -> let _ = print_endline (string_of_int n) in 
+		let body = If(is_successful x, build_ftn(unused, final), Var x) in
 		letx(x, e', body)
-		| _ -> 
-		letx(x, e', body)
-		)
-	| Handle (e1, x, e2) -> 
-		removeIter e1
 
-let removeExn : xexp -> xexp = fun e ->
-	let temp = Fn(vname 0 , Num(201812)) in
-	App (Fn (fname, (removeIter e)), temp) 
+	| Handle (e1, x, e2) -> 
+		let _ = print_endline "HANDLE" in
+		let e1' = removeIter e1 in
+		let e2' = removeIter e2 in
+		(* y <- e1' *)
+		let y = vname 0 in 
+
+		let body = If(Equal(get_num y, Num x), build_ftn(e2', get_num y), Var y) in
+		let _ = print_endline ("HANDLE2"^y) in
+		letx(y, e1', body)
+		*)
+
+
+						
+
+
 
 

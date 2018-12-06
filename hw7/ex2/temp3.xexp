@@ -1,0 +1,16 @@
+(
+ if ((tt1) ((1 = 0)) = 201812) then 
+  fn tt2 => 
+   if tt2 then 
+    fn x => (tt1) ((1 = 1))
+   else
+    201812
+
+ else
+  tt1
+) (fn tt0 => 
+ if tt0 then 
+  x
+ else
+  201812
+))
