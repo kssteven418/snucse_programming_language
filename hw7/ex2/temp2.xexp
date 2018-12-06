@@ -1,6 +1,5 @@
 (* Public testcase 1 : Simple Raise/Handle with If, Equal, Fn *)
 
-9
-
+(fn x => raise 100) (777)
 
 (* Output : 200 *)

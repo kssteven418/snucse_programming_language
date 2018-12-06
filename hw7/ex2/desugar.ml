@@ -12,12 +12,12 @@ let cntv = ref 0
 
 
 let vname () = 
-	let temp = "!@#$"^(string_of_int !cntv) in
+	let temp = "["^(string_of_int !cntv)^"]" in
 	let _ = cntv := !cntv+1 in
 	temp
 
 let unused_i = 201812
-let unused = let k = vname() in Fn (k, App (Var k, Num unused_i))
+let unused = Num unused_i
 
 (*
 
@@ -51,28 +51,67 @@ let rec print e =
 let letx (x, e1, e2) = 
 	App (Fn (x, e2), e1)
 
-let one_f = let k = vname() in Fn(k, App(Var k, Num 1)) 
-let zero_f = let k = vname() in Fn(k, App(Var k, Num 0)) 
-let true_f = 
-	let k = vname() in 
+(*
+	let k = vname() in
+	let k1 = vname() in
+	let k2 = vname() in
 	let v1 = vname() in
 	let v2 = vname() in
-		Fn(k, App(one_f, 
-							Fn(v1, App(one_f,
-											Fn(v2, App(Var k, Equal(Var v1, Var v2)))))))
-let false_f = 
-	let k = vname() in 
-	let v1 = vname() in
-	let v2 = vname() in
-		Fn(k, App(one_f, 
-							Fn(v1, App(zero_f,
-											Fn(v2, App(Var k, Equal(Var v1, Var v2)))))))
-
+	Fn (k, App(Fn(k1, App (Var k1, n)),
+					Fn(v1, App( Fn(k2, App(Var k2, unused)),
+									Fn(v2, App(Var k, Equal(Var v1, Var v2)))))))
+*)
 (* will be binded later *)
 let one_v = vname()
 let zero_v = vname()
-let true_v = vname()
-let false_v = vname()
+let true_v = Equal(Num 1, Num 1)
+let false_v = Equal(Num 1, Num 0)
+
+let cpsnum n = 
+		let k = vname() in
+		Fn (k, App(Var k, n)) 
+
+let cpsvar v = 
+		let k = vname() in
+		Fn (k, App(Var k, v)) 
+	
+let cpsfn (x, e') =
+		let k = vname() in
+		Fn(k, App(Var k, Fn(x, e'))) 
+
+let cpsapp (e1', e2') = 
+		let k = vname() in
+		let v1 = vname() in
+		let v2 = vname() in
+		Fn (k,  App (e1',
+								Fn (v1, App (e2',
+												Fn (v2, App (App (Var v1, Var v2), Var k)))))) 
+
+let cpsif (e1', e2', e3') = 
+    let k = vname () in
+    let v1 = vname () in
+    let v2 = vname () in
+		let v3 = vname () in
+		let e2'' = App (e2', Fn (v2, App (Var k, Var v2))) in
+		let e3'' = App (e3', Fn (v3, App (Var k, Var v3))) in
+		Fn (k, App (e1', Fn(v1, If (Var v1, e2'', e3'')))) 
+
+let cpseq (e1', e2') = 
+    let k = vname () in
+    let v1 = vname () in
+    let v2 = vname () in
+    Fn (k, App (e1', 
+								Fn (v1, App (e2', 
+												Fn (v2, App (Var k,  Equal(Var v1, Var v2))))))) 
+
+let one_f = cpsnum (Num 1)
+let zero_f = cpsnum (Num 0) 
+
+let true_f = cpseq(one_f, one_f)
+let false_f = cpseq(one_f, zero_f)
+
+let is_succ n' =
+	cpseq(n', cpsnum(unused))
 
 let rec cps : xexp -> xexp = fun e ->
 
@@ -80,6 +119,18 @@ let rec cps : xexp -> xexp = fun e ->
 
 (* e 0 will be handler number, e 1 will be the true value *)
 	let build_ftn (e', n) =
+		let n' = cpsnum n in
+		let v = vname() in
+		let ifst' = cpsif(cpsvar(Var v), e', n') in
+		let f' = cpsfn(v, ifst') in
+		f' in
+
+	let build_ftn' (e', n') =
+		let v = vname() in
+		let ifst' = cpsif(cpsvar(Var v), e', n') in
+		let f' = cpsfn(v, ifst') in
+		f' in
+	(*
 		let v = vname () in
 		let k = vname () in
 		let k1 = vname () in
@@ -89,7 +140,12 @@ let rec cps : xexp -> xexp = fun e ->
 			Fn(k, App(Var k, Fn(v,
 						Fn(k1, App(e', Fn(k1, If(Var k1, e', n'))))))) in
 		body in
-
+	*)
+	(*
+		let v = vname() in
+		Fn(v, If(Var v, e', n)) in
+	*)
+		
 	match e with 
 	| Num n -> 
 		let n' = Fn (k, App (Var k, Num n)) in
@@ -98,14 +154,52 @@ let rec cps : xexp -> xexp = fun e ->
 	| Var v ->
 		let v' = Fn (k, App (Var k, Var v)) in
 		build_ftn(v', unused)
+	
+	| Fn (x, e) ->
+		let _ = print_endline "FN" in
+		let e' = cps e in
+		let f = cpsapp(e', true_f) in
+		let n = cpsapp(e', false_f) in
+
+		let f' = cpsfn(x, f) in
+		let f_succ = build_ftn(f', unused) in
+		let f_fail = e' in
+		let f'' = cpsif(is_succ n, f_succ, f_fail) in 
+		f''
+		(*build_ftn(f', unused)*)
+
+	
+	| App (e1, e2) ->
+		let _ = print_endline "APP" in
+
+		let e1' = cps e1 in
+		let e2' = cps e2 in
+		let f1 = cpsapp(e1', true_f) in
+		let n1 = cpsapp(e1', false_f) in
+		let f2 = cpsapp(e2', true_f) in
+		let n2 = cpsapp(e2', false_f) in
+
+		let f' = cpsapp(f1, f2) in 
+		let f_succ = build_ftn(f', unused) in
+		
+		let f'' = cpsif(is_succ n1, cpsif(is_succ n2, f_succ, e2'), e1') in
+		f''
+
+	| Raise e ->
+		let e' = cps e in
+		let f = cpsapp(e', true_f) in
+		let n = cpsapp(e', false_f) in
+		(* TODO :  handlinf nested raise..?? *)
+
+		build_ftn'(n, f)
 
 	|_ -> e
 
 let removeExn : xexp -> xexp = fun e ->
 	let k = vname() in
 	let temp = 
-		App((App(cps e, Fn(k, Var k))), true_f) in
-	let _ = print_endline(print temp) in
+		(* If(App((is_succ (Num 10)),(Fn(k, Var k))), Num 1, Num 0) in*)
+		App(cpsapp(cps e, true_f), (Fn(k, Var k))) in
 
 	temp
 		(*
