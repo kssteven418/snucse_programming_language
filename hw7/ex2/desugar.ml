@@ -184,22 +184,59 @@ let rec cps : xexp -> xexp = fun e ->
 		
 		let f'' = cpsif(is_succ n1, cpsif(is_succ n2, f_succ, e2'), e1') in
 		f''
+	
+	| Equal (e1, e2) ->
+		let _ = print_endline "EQU" in
+
+		let e1' = cps e1 in
+		let e2' = cps e2 in
+		let f1 = cpsapp(e1', true_f) in
+		let n1 = cpsapp(e1', false_f) in
+		let f2 = cpsapp(e2', true_f) in
+		let n2 = cpsapp(e2', false_f) in
+
+		let f' = cpseq(f1, f2) in 
+		let f_succ = build_ftn(f', unused) in
+		
+		let f'' = cpsif(is_succ n1, cpsif(is_succ n2, f_succ, e2'), e1') in
+		f''
+	
+	
+	
+	| If (e1, e2, e3) ->
+		let e1' = cps e1 in
+		let e2' = cps e2 in
+		let e3' = cps e3 in
+		let f1 = cpsapp(e1', true_f) in
+		let n1 = cpsapp(e1', false_f) in
+		let f2 = cpsapp(e2', true_f) in
+		let n2 = cpsapp(e2', false_f) in
+		let f3 = cpsapp(e3', true_f) in
+		let n3 = cpsapp(e3', false_f) in
+
+		let f' = cpsif(f1, f2, f3) in 
+		let f_succ = build_ftn(f', unused) in
+		
+		(* need some modification!! *)
+		let f'' = cpsif(is_succ n1, 
+							cpsif(is_succ n2, 
+							cpsif(is_succ n3, f_succ, e3'), e2'), e1') in
+		f''
 
 	| Raise e ->
 		let e' = cps e in
 		let f = cpsapp(e', true_f) in
 		let n = cpsapp(e', false_f) in
 		(* TODO :  handlinf nested raise..?? *)
-
 		build_ftn'(n, f)
 
-	|_ -> e
+	| Handle (e1, x, e2) -> e
 
 let removeExn : xexp -> xexp = fun e ->
 	let k = vname() in
 	let temp = 
 		(* If(App((is_succ (Num 10)),(Fn(k, Var k))), Num 1, Num 0) in*)
-		App(cpsapp(cps e, true_f), (Fn(k, Var k))) in
+		App(cpsapp(cps e, false_f), (Fn(k, Var k))) in
 
 	temp
 		(*

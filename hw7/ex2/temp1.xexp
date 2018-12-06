@@ -1,0 +1,7 @@
+(* Public testcase 1 : Simple Raise/Handle with If, Equal, Fn *)
+
+let f = (fn x => if x = 10 then 100 else raise 77) in
+let g = (fn x => (f x)) in
+(g 9) 
+
+(* Output : 200 *)
