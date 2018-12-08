@@ -277,7 +277,41 @@ let rec w : typ_env * M.exp -> subst * typ = fun (gamma, exp) ->
 		(s', s' t3)
 		
 
-	| M.BOP (op, e2, e3) -> just
+	| M.BOP (op, e1, e2) -> 
+		(match op with
+		 	| M.ADD
+		 	| M.SUB ->
+		 		let (s1, t1) = w(gamma, e1) in
+				let s_uni1 = unify(t1, TInt) in
+				let s' = s_uni1 @@ s1 in
+				let gamma' = subst_env s' gamma in
+				let (s2, t2) = w(gamma', e2) in
+				let s_uni2 = unify(t2, TInt) in
+				let s' = s_uni2 @@ s2 @@ s_uni1 @@ s1 in
+				(s', TInt)
+
+			| M.AND
+			| M.OR ->
+		 		let (s1, t1) = w(gamma, e1) in
+				let s_uni1 = unify(t1, TBool) in
+				let s' = s_uni1 @@ s1 in
+				let gamma' = subst_env s' gamma in
+				let (s2, t2) = w(gamma', e2) in
+				let s_uni2 = unify(t2, TBool) in
+				let s' = s_uni2 @@ s2 @@ s_uni1 @@ s1 in
+				(s', TBool)
+						
+			| M.EQ ->
+		 		let (s1, t1) = w(gamma, e1) in
+				let s_uni1 = unify(t1, TIBSL(new_var())) in
+				let s' = s_uni1 @@ s1 in
+				let gamma' = subst_env s' gamma in
+				let (s2, t2) = w(gamma', e2) in
+				let s_uni2 = unify(t2, TIBSL(new_var())) in
+				let s_uni3 = unify(t1, t2) in
+				let s' = s_uni3 @@ s_uni2 @@ s2 @@ s_uni1 @@ s1 in
+				(s', TBool)
+		)
 
 	| M.READ -> (empty_subst, TInt)
 
@@ -349,5 +383,15 @@ let rec w : typ_env * M.exp -> subst * typ = fun (gamma, exp) ->
 		(s', s' beta2)
 		
 
-let check : M.exp -> M.typ =
-  raise (M.TypeError "Type Checker Unimplemented")
+let rec output_type = fun t ->
+	match t with
+  | TInt -> M.TyInt
+  | TBool -> M.TyBool
+  | TString -> M.TyString
+  | TPair (t1, t2) -> M.TyPair (output_type t1, output_type t2)
+  | TLoc l -> M.TyLoc (output_type l)
+	| _ -> raise(M.TypeError "Type is not determined in closed form")
+
+let check : M.exp -> M.typ = fun exp ->
+  let (_, t) = w ([], exp) in
+	output_type t
