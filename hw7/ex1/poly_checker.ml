@@ -95,10 +95,157 @@ let subst_scheme : subst -> typ_scheme -> typ_scheme = fun subs tyscm ->
     in
     GenTyp (betas, subs (s' t))
 
+(* subst_env S Gamma == SGamma *)
 let subst_env : subst -> typ_env -> typ_env = fun subs tyenv ->
   List.map (fun (x, tyscm) -> (x, subst_scheme subs tyscm)) tyenv
 
 
+
+
+
 (* TODO : Implement this function *)
+	
+let search_env : typ_env -> M.id -> typ_scheme = fun gamma x ->
+	
+	(* gamma : id, scheme list *)
+	(* find elmt that has same id *)
+	let pred = fun (i', ts') -> i' = x in 
+	let (i, ts) = List.find pred gamma in
+	ts
+
+let rec var_in_type = fun t a ->
+	match t with 
+	| TPair(t1, t2) 
+	| TFun(t1, t2) -> (var_in_type t1 a) || (var_in_type t2 a)
+	| TLoc t' -> var_in_type t' a
+	| TVar t' -> t'=a
+	| _ -> false
+	
+let rec unify : typ * typ -> subst = fun (t1, t2) ->
+	(* exactly matching *)
+	if t1=t2 then empty_subst
+	else match(t1, t2) with
+	(* pairwise types *)
+	| (TFun(x, y), TFun(x', y')) ->
+		let s = unify(x, x') in
+		let s' = unify(y, y') in
+		(s @@ s')
+	| (TPair(x, y), TPair(x', y')) ->
+		let s = unify(x, x') in
+		let s' = unify(y, y') in
+		(s @@ s')
+	(* type ans variable -> variable must not be in the type *)
+	| (t, TVar a)
+	| (TVar a, t) ->
+		if (var_in_type t a) then (* fails *)
+			raise (M.TypeError "unify failure")
+		else make_subst a t
+	| _ -> empty_subst
+
+let rec expansive = fun exp ->
+	match exp with
+	| M.CONST c -> false
+	| M.VAR v -> false
+	| M.FN (x, e) -> false
+	| M.READ -> false
+	| M.WRITE e -> false
+	| M.BANG e -> false
+	| M.APP (e1, e2) -> true
+	| M.MALLOC e -> true
+ 	| M.ASSIGN (e1, e2) -> true
+	| M.IF (e1, e2, e3) -> (expansive e1)||(expansive e2)||(expansive e3)
+	| M.LET (M.VAL (x, e1), e2) -> (expansive e1)||(expansive e2)
+	| M.LET (M.REC (f, x, e1), e2) -> (expansive e1)||(expansive e2)
+	| M.BOP (op, e1, e2) -> (expansive e1)||(expansive e2)
+	| M.SEQ (e1, e2) -> (expansive e1)||(expansive e2)
+	| M.PAIR (e1, e2) -> (expansive e1)||(expansive e2) 
+	| M.FST e -> expansive e
+	| M.SND e -> expansive e
+
+let just = (empty_subst, TInt) (* just for debugging *)
+
+let rec w : typ_env * M.exp -> subst * typ = fun (gamma, exp) ->
+	match exp with
+	| M.CONST c -> 
+		(match c with
+		 | M.S s -> (empty_subst, TString)
+		 | M.N n -> (empty_subst, TInt)
+		 | M.B b -> (empty_subst, TBool)
+		)
+
+	| M.VAR v -> 
+		begin 
+		try
+			let ts = search_env gamma v in
+			(* this function with empty_subst will automatically build {ai->bi}t *)
+			let new_ts = subst_scheme empty_subst ts in
+			(match new_ts with
+				| SimpleTyp t -> (empty_subst, t)
+				| GenTyp (_, t) -> (empty_subst, t)
+			)
+		with Not_found -> raise (M.TypeError (v^" is not declared"))
+		end
+
+	| M.FN (x, e) -> 
+		let beta = TVar(new_var()) in
+		(* add x:beta in the env. *)
+		let gamma' = [(x, SimpleTyp(beta))]@gamma in 
+		let (s, t) = w(gamma', e) in
+		(s, s(TFun(s beta, t)))
+
+
+	| M.APP (e1, e2) -> 
+		let (s1, t1) = w(gamma, e1) in
+		let (s2, t2) = w(subst_env s1 gamma, e2) in
+		let beta = TVar(new_var()) in
+		let s3 = unify(s2 t1, TFun(t2, beta)) in
+		let s' = (s3 @@ s2 @@ s1) in
+		(s', s' beta)
+
+	| M.LET (d, e2) -> 
+		( match d with 
+			| M.REC (f, x, e1) -> just
+			| M.VAL (x, e1) ->
+				let (s1, t1) = w(gamma, e1) in
+				let gamma' = subst_env s1 gamma in
+				let gamma'' =
+					if (expansive e1) then
+						[(x, SimpleTyp t1)] @ gamma'
+					else [(x, generalize gamma' t1)] @ gamma' in
+				let (s2, t2) = w(gamma'', e2) in
+				let s' = (s2 @@ s1) in
+				(s', t2)
+		)
+
+	| M.IF (e1, e2, e3) -> just
+
+	| M.BOP (op, e2, e3) -> just
+
+	| M.READ -> just
+
+	| M.WRITE e -> just
+
+	| M.MALLOC e -> (* malloc e *)
+		just
+
+	| M.ASSIGN (e1, e2) -> (* e1 := e2 *)
+		just
+	
+	| M.BANG e -> (* !e *)
+		just
+
+	| M.SEQ (e1, e2) -> (* e1; e2 *)
+		just
+	
+	| M.PAIR (e1, e2) -> (* (e1, e2) *)
+		just
+	
+	| M.FST e ->
+		just
+
+	| M.SND e ->
+		just
+		
+
 let check : M.exp -> M.typ =
   raise (M.TypeError "Type Checker Unimplemented")
