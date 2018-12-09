@@ -7,345 +7,137 @@ open Xexp
 
 (* TODO : Implement this function *)
 
-let cntf = ref 0 
-let cntv = ref 0 
+let cntv = ref 1
 
 
-let vname () = 
+let new_var () = 
 	let temp = "["^(string_of_int !cntv)^"]" in
 	let _ = cntv := !cntv+1 in
 	temp
 
-let unused_i = 201812
-let unused = Num unused_i
-
-(*
-
-
-(* is the sub expression was ended successful? *)
-(* if successful, than the v[0] should be intact with unused value *)
-let is_successful v =
-	Equal(App(Var v, Equal(Num 1, Num 0)), unused)
-
-let is_match (v, w)  =
-	Equal(App(v, Equal(Num 1, Num 0)), App(w, Equal(Num 1, Num 0)))
-
-let get_num v = 
-	App(Var v, Equal(Num 1, Num 0))
-
-(* the original value is kept in v[1] *)
-let value v = App(Var v, Equal(Num 1, Num 1)) 
-
-*)
-let rec print e =
-	match e with 
-	| Num n -> string_of_int n
-	| Var v -> v
-	| Fn (x, e') -> x^"->"^(print e')
-	| App (e1, e2) -> "(("^(print e1)^") ("^(print e2)^"))"
-	| If (e1, e2, e3) -> "if ( "^(print e1)^" ) \n then( "^(print e2)^" ) \n else( "^(print e3)^" )"
-	| Equal (e1, e2) -> "("^(print e1)^" = "^(print e2)^")"
-	| _ -> "Non"
-
-(* LET x = e1 in e2 *)
-let letx (x, e1, e2) = 
-	App (Fn (x, e2), e1)
-
-(*
-	let k = vname() in
-	let k1 = vname() in
-	let k2 = vname() in
-	let v1 = vname() in
-	let v2 = vname() in
-	Fn (k, App(Fn(k1, App (Var k1, n)),
-					Fn(v1, App( Fn(k2, App(Var k2, unused)),
-									Fn(v2, App(Var k, Equal(Var v1, Var v2)))))))
-*)
-(* will be binded later *)
-let one_v = vname()
-let zero_v = vname()
-let true_v = Equal(Num 1, Num 1)
-let false_v = Equal(Num 1, Num 0)
-
-let cpsnum n = 
-		let k = vname() in
-		Fn (k, App(Var k, n)) 
-
-let cpsvar v = 
-		let k = vname() in
-		Fn (k, App(Var k, v)) 
+let un_i = 201812
+let un = Num un_i (* unusing number *)
 	
-let cpsfn (x, e') =
-		let k = vname() in
-		Fn(k, App(Var k, Fn(x, e'))) 
 
-let cpsapp (e1', e2') = 
-		let k = vname() in
-		let v1 = vname() in
-		let v2 = vname() in
-		Fn (k,  App (e1',
-								Fn (v1, App (e2',
-												Fn (v2, App (App (Var v1, Var v2), Var k)))))) 
+let decapsule =
+	let v1 = new_var() in
+	let v2 = new_var() in
+	Fn(v1, Fn(v2, Var v2))
 
-let cpsif (e1', e2', e3') = 
-    let k = vname () in
-    let v1 = vname () in
-    let v2 = vname () in
-		let v3 = vname () in
-		let e2'' = App (e2', Fn (v2, App (Var k, Var v2))) in
-		let e3'' = App (e3', Fn (v3, App (Var k, Var v3))) in
-		Fn (k, App (e1', Fn(v1, If (Var v1, e2'', e3'')))) 
+let decapsule_deb = 
+	let v1 = new_var() in
+	let v2 = new_var() in
+	Fn(v1, Fn(v2, Var v1))
 
-let cpseq (e1', e2') = 
-    let k = vname () in
-    let v1 = vname () in
-    let v2 = vname () in
-    Fn (k, App (e1', 
-								Fn (v1, App (e2', 
-												Fn (v2, App (Var k,  Equal(Var v1, Var v2))))))) 
 
-let one_f = cpsnum (Num 1)
-let zero_f = cpsnum (Num 0) 
-
-let true_f = cpseq(one_f, one_f)
-let false_f = cpseq(one_f, zero_f)
-
-let is_succ n' =
-	cpseq(n', cpsnum(unused))
-
-let rec cps : xexp -> xexp = fun e ->
-
-	let k = vname() in
-
-(* e 0 will be handler number, e 1 will be the true value *)
-	let build_ftn (e', n) =
-		let n' = cpsnum n in
-		let v = vname() in
-		let ifst' = cpsif(cpsvar(Var v), e', n') in
-		let f' = cpsfn(v, ifst') in
-		f' in
-
-	let build_ftn' (e', n') =
-		let v = vname() in
-		let ifst' = cpsif(cpsvar(Var v), e', n') in
-		let f' = cpsfn(v, ifst') in
-		f' in
-	(*
-		let v = vname () in
-		let k = vname () in
-		let k1 = vname () in
-		let k2 = vname () in
-		let n' = Fn (k2, App (Var k, n)) in
-		let body =
-			Fn(k, App(Var k, Fn(v,
-						Fn(k1, App(e', Fn(k1, If(Var k1, e', n'))))))) in
-		body in
+let rec cps exp =
+	
+	let k = new_var () in
+	
+	(* encode :
+	 	Normal expr : \k ((k un) val)  (un : unused #, 201812)
+		Abnormal expr : \k ((k rn) hn) (rn : raise #, hn : handle #, init un) 
 	*)
-	(*
-		let v = vname() in
-		Fn(v, If(Var v, e', n)) in
-	*)
-		
-	match e with 
-	| Num n -> 
-		let n' = Fn (k, App (Var k, Num n)) in
-		build_ftn(n', unused)
-	
-	| Var v ->
-		let v' = Fn (k, App (Var k, Var v)) in
-		build_ftn(v', unused)
-	
-	| Fn (x, e) ->
-		let _ = print_endline "FN" in
-		let e' = cps e in
-		let f = cpsapp(e', true_f) in
-		let n = cpsapp(e', false_f) in
 
-		let f' = cpsfn(x, f) in
-		let f_succ = build_ftn(f', unused) in
-		let f_fail = e' in
-		let f'' = cpsif(is_succ n, f_succ, f_fail) in 
-		f''
-		(*build_ftn(f', unused)*)
+	match exp with
+  | Num n -> Fn(k, App(App(Var k, un), Num n))
+  | Var v -> Fn(k, App(App(Var k, un), Var v))
+  | Fn (x, e) -> Fn(k, App(App(Var k, un), Fn(x, cps e))) 
+  | App (e1, e2) -> 
+		let rn1 = new_var() in
+		let rn2 = new_var() in
+		let f = new_var() in
+		let v = new_var() in
+		let subst_ftn f v = 
+			let rn = new_var() in
+			let hn = new_var() in
+			let f' = App(Var f, Var v) in
+			App(f', Fn(rn, If(Equal(Var rn, un),
+												Fn(hn, App(App(Var k, Var rn), Var hn)),
+												Fn(hn, App(App(Var k, Var rn), Var hn))))) in
+		Fn(k, App((cps e1),
+							Fn(rn1, If(Equal(Var rn1, un),
+													Fn(f, App((cps e2),
+																		Fn(rn2, If(Equal(Var rn2, un),
+																								Fn(v, subst_ftn f v),
+																								Fn(v, App(App(Var k, Var rn2), Var v)))))),
+													Fn(f, App(App(Var k, Var rn1), Var f))))))
 
-	
-	| App (e1, e2) ->
-		let _ = print_endline "APP" in
+  | If (e1, e2, e3) -> 
+		let rn1 = new_var() in
+		let rn2 = new_var() in
+		let rn3 = new_var() in
+		let v1 = new_var() in
+		let v2 = new_var() in
+		let v3 = new_var() in
 
-		let e1' = cps e1 in
-		let e2' = cps e2 in
-		let f1 = cpsapp(e1', true_f) in
-		let n1 = cpsapp(e1', false_f) in
-		let f2 = cpsapp(e2', true_f) in
-		let n2 = cpsapp(e2', false_f) in
-
-		let f' = cpsapp(f1, f2) in 
-		let f_succ = build_ftn(f', unused) in
-		
-		let f'' = cpsif(is_succ n1, cpsif(is_succ n2, f_succ, e2'), e1') in
-		f''
-	
-	| Equal (e1, e2) ->
-		let _ = print_endline "EQU" in
-
-		let e1' = cps e1 in
-		let e2' = cps e2 in
-		let f1 = cpsapp(e1', true_f) in
-		let n1 = cpsapp(e1', false_f) in
-		let f2 = cpsapp(e2', true_f) in
-		let n2 = cpsapp(e2', false_f) in
-
-		let f' = cpseq(f1, f2) in 
-		let f_succ = build_ftn(f', unused) in
-		
-		let f'' = cpsif(is_succ n1, cpsif(is_succ n2, f_succ, e2'), e1') in
-		f''
-	
-	
-	
-	| If (e1, e2, e3) ->
-		let e1' = cps e1 in
-		let e2' = cps e2 in
-		let e3' = cps e3 in
-		let f1 = cpsapp(e1', true_f) in
-		let n1 = cpsapp(e1', false_f) in
-		let f2 = cpsapp(e2', true_f) in
-		let n2 = cpsapp(e2', false_f) in
-		let f3 = cpsapp(e3', true_f) in
-		let n3 = cpsapp(e3', false_f) in
-
-		let f' = cpsif(f1, f2, f3) in 
-		let f_succ = build_ftn(f', unused) in
-		
-		(* need some modification!! *)
-		let f'' = cpsif(is_succ n1, 
-							cpsif(is_succ n2, 
-							cpsif(is_succ n3, f_succ, e3'), e2'), e1') in
-		f''
-
-	| Raise e ->
-		let e' = cps e in
-		let f = cpsapp(e', true_f) in
-		let n = cpsapp(e', false_f) in
-		(* TODO :  handlinf nested raise..?? *)
-		build_ftn'(n, f)
-
-	| Handle (e1, x, e2) -> e
+		(*
+		Fn(k, App(cps e2, Fn(rn1, Fn(v1, App(App(Var k, Var v1
+		*)
+		Fn(k, App((cps e1),
+								(*
+								Fn(rn1, If(Equal(Var rn1, un),
+												Fn(v1, App((cps e2), 
+																Fn(rn2, If(Equal(Var rn2, un),
+																				Fn(v2, App(App(Var k, un), Var v2)),
+																				Fn(v2, App(App(Var k, Var rn2), Var v2)))))),
+												Fn(v1, App(App(Var k, Var rn1), Var v1))))))
+				*)
+							Fn(rn1, If(Equal(Var rn1, un),
+													Fn(v1, If(Var v1,
+																		App((cps e2), 
+																				Fn(rn2, If(Equal(Var rn2, un),
+																									Fn(v2, App(App(Var k, un), Var v2)),
+																									Fn(v2, App(App(Var k, Var rn2), Var v2))))),
+																		App((cps e3), 
+																				Fn(rn3, If(Equal(Var rn3, un),
+																									Fn(v3, App(App(Var k, un), Var v3)),
+																									Fn(v3, App(App(Var k, Var rn3), Var v3))))))),
+													Fn(v1, App(App(Var k, Var rn1), Var v1))))))
+  | Equal (e1, e2) -> 
+		let rn1 = new_var() in
+		let rn2 = new_var() in
+		let v1 = new_var() in
+		let v2 = new_var() in
+		(*
+		Fn(k, App(App(Var k, un), Equal(Num 1, Num 1)))
+		Fn(k, App((cps e1), Fn(rn1, Fn(v1, App((cps e2), Fn(rn2, Fn(v2, App(App(Var k, Equal(Num 1, Num 1)), un))))))))
+		*)
+		Fn(k, App((cps e1),
+							Fn(rn1, If(Equal(Var rn1, un),
+													Fn(v1, App((cps e2),
+																		Fn(rn2, If(Equal(Var rn2, un),
+																								Fn(v2, App(App(Var k, un), Equal(Var v1, Var v2))),
+																								Fn(v2, App(App(Var k, Var rn2), Var v2)))))),
+													Fn(v1, App(App(Var k, Var rn1), Var v1))))))
+  | Raise e -> 
+		let rn = new_var () in 
+		let hn = new_var () in
+		(* case 1 : e is a normal expr, 
+		 		then, make a new abnormal expression,
+				by setting rn as a e's 2nd value and hn as un 
+			 case 2 : e is a abnormal expr,
+			 	then, pass it directly *)
+		Fn(k, App((cps e), 
+							Fn(rn, If(Equal(Var rn, un),
+											  Fn(hn, App(App(Var k, Var hn), un)), (* 1 *)
+												Fn(hn, App(App(Var k, Var rn), Var hn)))))) (* 2 *)
+  | Handle (e1, x, e2) -> 
+		let rn = new_var() in
+		let v = new_var () in
+		let v1 = new_var () in
+		let v2 = new_var() in
+		let handleftn =	Fn(v1, If(Equal(Var v1, un),
+															Fn(v2, App(App(Var k, Var rn), Var v2)),
+															Fn(v2, App(App(Var k, Var v1), un)))) in 
+		Fn(k, App((cps e1),
+							Fn(rn, If(Equal(Var rn, Num x),
+												Fn(v, App(cps e2, handleftn)),
+												Fn(v, App(App(Var k, Var rn), Var v)))))) 
 
 let removeExn : xexp -> xexp = fun e ->
-	let k = vname() in
-	let temp = 
-		(* If(App((is_succ (Num 10)),(Fn(k, Var k))), Num 1, Num 0) in*)
-		App(cpsapp(cps e, false_f), (Fn(k, Var k))) in
-
-	temp
-		(*
-	| Num n -> 
-		let _ = print_endline "NUM" in
-		build_ftn (Num n, unused)
-
-	| Var v -> 
-		let _ = print_endline "VAR" in
-		build_ftn (Var v, unused)
-
-	| Fn (x, e) -> 
-		let e' = removeIter e in
-		let y = vname 0 in
-		let _ = print_endline ("FN "^y) in
-
-		let final = Fn(x, value y) in
-
-		let body = If(is_successful y, build_ftn(final, unused), Var y) in
-		letx(y, e', body)
-
-	| App (e1, e2) ->
-		let e1' = removeIter e1 in
-		let e2' = removeIter e2 in
-		(* x <- e1' *)
-		(* y <- e2' *)
-		let x = vname 0 in
-		let y = vname 0 in
-		let _ = print_endline ("APP "^x^" "^y) in
-		
-		let _ = print_endline (print e1') in
-		let _ = print_endline "" in
-		let _ = print_endline (print e2') in
-		let _ = print_endline "" in
-
-		let final = App(value x, value y) in
-
-		let body2 = If(is_successful y, build_ftn(final, unused), Var y) in
-		let let2 = letx(y, e2', body2) in
-
-		let body = If(is_successful x, let2, Var x) in
-		letx(x, e1', body)
-
-	| If (e1, e2, e3) ->
-		let e1' = removeIter e1 in
-		let e2' = removeIter e2 in
-		let e3' = removeIter e3 in
-		(* x <- e1' *)
-		(* y <- e2' *)
-		(* z <- e3' *)
-		let x = vname 0 in
-		let y = vname 0 in
-		let z = vname 0 in
-		let _ = print_endline ("IF "^x^" "^y^" "^z) in
-
-		let final = If(value x, value y, value z) in
-		
-		let body3 = If(is_successful z, build_ftn(final, unused), Var z) in
-		let let3 = letx(z, e3', body3) in
-
-		let body2 = If(is_successful y, let3, Var y) in
-		let let2 = letx(y, e2', body2) in
-
-		let body = If(is_successful x, let2, Var x) in
-		letx(x, e1', body)
-
-	| Equal (e1, e2) ->
-		let e1' = removeIter e1 in
-		let e2' = removeIter e2 in
-		(* x <- e1' *)
-		(* y <- e2' *)
-		let x = vname 0 in
-		let y = vname 0 in
-		let _ = print_endline ("EQUAL "^x^" "^y) in
-
-		let final = Equal(value x, value y) in
-
-		let body2 = If(is_successful y, build_ftn(final, unused), Var y) in
-		let let2 = letx(y, e2', body2) in
-
-		let body = If(is_successful x, let2, Var x) in
-		letx(x, e1', body)
-
-	| Raise e -> 
-		let e' = removeIter e in
-		(* x <- e' *)
-		let x = vname 0 in
-		let _ = print_endline ("RAISE "^x) in
-
-		let final = value x in
-		
-		let body = If(is_successful x, build_ftn(unused, final), Var x) in
-		letx(x, e', body)
-
-	| Handle (e1, x, e2) -> 
-		let _ = print_endline "HANDLE" in
-		let e1' = removeIter e1 in
-		let e2' = removeIter e2 in
-		(* y <- e1' *)
-		let y = vname 0 in 
-
-		let body = If(Equal(get_num y, Num x), build_ftn(e2', get_num y), Var y) in
-		let _ = print_endline ("HANDLE2"^y) in
-		letx(y, e1', body)
-		*)
-
-
-						
-
-
-
+	let temp = cps e in
+	let first = App(temp, decapsule_deb) in
+	let second = App(temp, decapsule) in
+	second
 

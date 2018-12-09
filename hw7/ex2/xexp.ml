@@ -60,9 +60,15 @@ let rec eval env exp =
     | Exn n -> Exn n)
   | If (e1, e2, e3) ->
     (match eval env e1 with
-    | Val v -> if getBool v then eval env e2 else eval env e3
+    | Val v -> if getBool v then 
+  		(*let _ = print_endline "if_True" in*)
+		eval env e2 
+		else 
+  		(*let _ = print_endline "if_False" in*)
+		eval env e3
     | Exn n -> Exn n)
   | Equal (e1, e2) -> 
+  	(*let _ = print_endline "Equal" in*)
     (* e2 must be evaluated only if e1 is evaluated to a value *)
     (match eval env e1 with
     | Val v1 -> 

@@ -1,5 +1,11 @@
 (* Public testcase 1 : Simple Raise/Handle with If, Equal, Fn *)
 
-((raise 77) 10) handle 77 200
+(*((raise 77) 10) handle 77 200*)
+
+(*(raise 88) handle 88 10*)
+
+(*((fn x => raise 100) 10) handle 101 20*)
+
+(if 10 = 11 then x else raise 10)
 
 (* Output : 200 *)
