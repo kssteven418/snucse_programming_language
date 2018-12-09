@@ -129,6 +129,37 @@ let rec var_in_type = fun t a ->
 	| TIBSL t' -> t'=a
 	| _ -> false
 	
+let prt : typ -> unit =
+  let rec iter : typ -> unit =
+	    fun t ->
+			      match t with
+						      | TInt -> print_string "Int"
+									      | TBool -> print_string "Bool"
+												      | TString -> print_string "String"
+															      | TPair (t1, t2) ->
+																		          let _ = print_string "(" in
+																							          let _ = iter t1 in
+																												          let _ = print_string ", " in
+																																	          let _ = iter t2 in
+																																						          print_string ")"
+																																											      | TFun (t1, t2) ->
+																																														          let _ = print_string "(" in
+																																																			          let _ = iter t1 in
+																																																								          let _ = print_string " → " in
+																																																													          let _ = iter t2 in
+																																																																		          print_string ")"
+																																																																							      | TLoc t ->
+																																																																										          let _ = iter t in
+																																																																															          print_string "_Loc"
+																																																																																				      | TVar v -> print_string ("Var " ^ v)
+																																																																																							      | TIBS v -> print_string ("IBS " ^ v)
+																																																																																										      | TIBSL v -> print_string ("IBSL " ^ v)
+																																																																																													    in
+																																																																																															  fun t ->
+																																																																																																      let _ = iter t in
+																																																																																																			      print_string "\n"
+
+
 let rec unify : typ * typ -> subst = fun (t1, t2) ->
 	(* exactly matching *)
 	if t1=t2 then empty_subst
@@ -143,12 +174,15 @@ let rec unify : typ * typ -> subst = fun (t1, t2) ->
 		let s = unify(x, x') in
 		let s' = unify(s y, s y') in
 		(s @@ s')
+	| (TLoc x, TLoc y) ->
+		let s = unify(x, y) in
+		s
 	
 	(* type ans variable -> variable must not be in the type *)
 	| (t, TVar a)
 	| (TVar a, t) ->
 		if (var_in_type t a) then (* fails *)
-			raise (M.TypeError "unify failure")
+			raise (M.TypeError "unify failure TVar")
 		else 
 		(match t with
 			| _ -> 	make_subst a t
@@ -158,7 +192,7 @@ let rec unify : typ * typ -> subst = fun (t1, t2) ->
 	| (t, TIBSL a)
 	| (TIBSL a, t) ->
 		if (var_in_type t a) then (* fails *)
-			raise (M.TypeError "unify failure")
+			raise (M.TypeError "unify failure TIBSL, var not in")
 		else
 		(* must be one of int, bool, string, or loc type *)
 		(match t with 
@@ -170,14 +204,14 @@ let rec unify : typ * typ -> subst = fun (t1, t2) ->
 			| TIBSL _ (* or itself *) 
 				-> make_subst a t
 			| _ -> 
-			raise (M.TypeError "unify failure")
+			raise (M.TypeError "unify failure TIBSL")
 		)
 
 	(* IBS type *)
 	| (t, TIBS a)
 	| (TIBS a, t) ->
 		if (var_in_type t a) then (* fails *)
-			raise (M.TypeError "unify failure")
+			raise (M.TypeError "unify failure TIBS, val not in")
 		else
 		(* must be one of int, bool, or string type *)
 		(match t with 
@@ -187,11 +221,13 @@ let rec unify : typ * typ -> subst = fun (t1, t2) ->
 			| TIBS _ (* or itself *) 
 				-> make_subst a t
 			| _ -> 
-			raise (M.TypeError "unify failure")
+			raise (M.TypeError "unify failure TIBS")
 		)
 
-	| _ -> 
-	raise (M.TypeError "unify failure") 
+	| _ ->                 let _ = prt t1 in
+					                let _ = prt t2 in 
+
+	raise (M.TypeError "unify failure, no...") 
 
 let rec expansive = fun exp ->
 	match exp with
@@ -216,7 +252,6 @@ let rec expansive = fun exp ->
 let just = (empty_subst, TInt) (* just for debugging *)
 
 let rec w : typ_env * M.exp -> subst * typ = fun (gamma, exp) ->
-	let env = gamma in
 	match exp with
 	| M.CONST (M.S s) -> (empty_subst, TString)
 	| M.CONST (M.N n) -> (empty_subst, TInt)
@@ -250,7 +285,7 @@ let rec w : typ_env * M.exp -> subst * typ = fun (gamma, exp) ->
 		(* first statement : ftn type *)
 		let s3 = unify(s2 t1, TFun(t2, beta)) in
 		let s' = (s3 @@ s2 @@ s1) in
-		(s', s' beta)
+		(s', s3 beta)
 
 	| M.LET (d, e2) -> 
 		( match d with 
@@ -270,7 +305,7 @@ let rec w : typ_env * M.exp -> subst * typ = fun (gamma, exp) ->
 					else [(f, generalize gamma' (s' t1))] @ gamma' in
 				let (s2, t2) = w(gamma'', e2) in
 				let s' = s2 @@ s_uni @@ s1 in
-				(s', s' t2)
+				(s', s_uni t2)
 
 			| M.VAL (x, e1) ->
 				let (s1, t1) = w(gamma, e1) in
@@ -281,7 +316,7 @@ let rec w : typ_env * M.exp -> subst * typ = fun (gamma, exp) ->
 					else [(x, generalize gamma' t1)] @ gamma' in
 				let (s2, t2) = w(gamma'', e2) in
 				let s' = (s2 @@ s1) in
-				(s', s' t2)
+				(s', t2)
 		)
 
 	| M.BOP (op, e1, e2) -> 
@@ -361,6 +396,13 @@ let rec w : typ_env * M.exp -> subst * typ = fun (gamma, exp) ->
 				let s_loc = unify(l, t2) in
 				let s' = s_loc @@ s2 @@ s1 in
 				(s', s' t2) 
+			| TVar v -> 
+				let l = TVar(new_var()) in
+				let s' = unify(TLoc l, t1) in
+				let s'' = unify(l, t2) in
+				let snew = s''@@s'@@s2@@s1 in
+				(snew, snew t2)
+				
 			| _ -> raise (M.TypeError "cannot be assigned")
 		)
 	
@@ -418,7 +460,25 @@ let rec w : typ_env * M.exp -> subst * typ = fun (gamma, exp) ->
 				(s', s' beta2)
 			| _ -> raise (M.TypeError "error at SND") 
 		)
-		
+		(*
+		 | M.FST e ->
+			(* e must be a pair type *)
+			let	(s, t) = w(gamma, e) in
+			let beta1 = TVar(new_var()) in
+			let beta2 = TVar(new_var()) in
+			let s_uni = unify(t, TPair(beta1, beta2)) in
+			let s' = s_uni @@ s in
+			(s', s' beta1)
+	 
+	 	| M.SND e ->
+			(* e must be a pair type *)
+			let	(s, t) = w(gamma, e) in
+			let beta1 = TVar(new_var()) in
+			let beta2 = TVar(new_var()) in
+			let s_uni = unify(t, TPair(beta1, beta2)) in
+			let s' = s_uni @@ s in
+			(s', s' beta2)
+		*)
 
 let rec output_type = fun t ->
 	match t with
