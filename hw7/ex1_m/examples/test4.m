@@ -9,4 +9,12 @@ in
   const 1 + const true + const "programming language"
 end
 
+(*
+let 
+	val fst = fn x => x.1
+in
+   fst ("wrong", "2015 FALL 4190.310")
+ end
+*)
+
 (* Result : type error *)

@@ -152,28 +152,21 @@ let prt : typ -> unit =
 																																																																																																			      print_string "\n"
 
 
+
+																																																																																																					
+
 let rec unify : typ * typ -> subst = fun (t1, t2) ->
+	match(t1, t2) with
 	(* exactly matching *)
-	if t1=t2 then empty_subst
-	else match(t1, t2) with
-	
-	(* pairwise types *)
-	| (TFun(x, y), TFun(x', y')) ->
-		let s = unify(x, x') in
-		let s' = unify(s y, s y') in
-		(s @@ s')
-	| (TPair(x, y), TPair(x', y')) ->
-		let s = unify(x, x') in
-		let s' = unify(s y, s y') in
-		(s @@ s')
-	| (TLoc x, TLoc y) ->
-		let s = unify(x, y) in
-		s
+  | (TInt, TInt) -> empty_subst
+  | (TBool, TBool) -> empty_subst
+  | (TString, TString) -> empty_subst
 	
 	(* type ans variable -> variable must not be in the type *)
 	| (t, TVar a)
 	| (TVar a, t) ->
-		if (var_in_type t a) then (* fails *)
+		if t1=t2 then empty_subst
+		else if (var_in_type t a) then (* fails *)
 			raise (M.TypeError "unify failure TVar")
 		else 
 		(match t with
@@ -183,7 +176,9 @@ let rec unify : typ * typ -> subst = fun (t1, t2) ->
 	(* IBSL type *)
 	| (t, TIBSL a)
 	| (TIBSL a, t) ->
-		if (var_in_type t a) then (* fails *)
+		if t1=t2 then empty_subst
+		else if (var_in_type t a) then (* fails *)
+			let _ = prt t in
 			raise (M.TypeError "unify failure TIBSL, var not in")
 		else
 		(* must be one of int, bool, string, or loc type *)
@@ -202,7 +197,8 @@ let rec unify : typ * typ -> subst = fun (t1, t2) ->
 	(* IBS type *)
 	| (t, TIBS a)
 	| (TIBS a, t) ->
-		if (var_in_type t a) then (* fails *)
+		if t1=t2 then empty_subst
+		else if (var_in_type t a) then (* fails *)
 			raise (M.TypeError "unify failure TIBS, val not in")
 		else
 		(* must be one of int, bool, or string type *)
@@ -215,6 +211,18 @@ let rec unify : typ * typ -> subst = fun (t1, t2) ->
 			| _ -> 
 			raise (M.TypeError "unify failure TIBS")
 		)
+	(* pairwise types *)
+	| (TPair(x, y), TPair(x', y')) ->
+		let s = unify(x, x') in
+		let s' = unify(s y, s y') in
+		(s' @@ s)
+	| (TLoc x, TLoc y) ->
+		let s = unify(x, y) in
+		s
+	| (TFun(x, y), TFun(x', y')) ->
+		let s = unify(x, x') in
+		let s' = unify(s y, s y') in
+		(s' @@ s)
 
 	| _ -> 
 		let _ = prt t1 in
@@ -286,7 +294,7 @@ let rec m : typ_env * M.exp * typ -> subst = fun (gamma, exp, t) ->
 				| SimpleTyp t' 
 				| GenTyp (_, t') -> unify(t, t')
 			)
-			with Not_found -> raise (M.TypeError (v^" is not declared"))
+			with Not_found -> raise (M.TypeError (v^" is not declared!"))
 		end
 
 	| M.FN (x, e) -> 
@@ -304,9 +312,28 @@ let rec m : typ_env * M.exp * typ -> subst = fun (gamma, exp, t) ->
 		let s2 = m(gamma', e2, s1 (TVar b)) in
 		s2 @@ s1
 
+
 	| M.LET (d, e2) -> 
 		( match d with 
-			| M.REC (f, x, e1) -> empty_subst
+			| M.REC (f, x, e1) ->
+				let b1 = new_var() in
+				let b2 = new_var() in
+
+				let new_env = 
+					if(expansive e1) then [(x, SimpleTyp(TFun(TVar b1, TVar b2)))]
+					else [(f, generalize gamma (TFun(TVar b1, TVar b2)))] in
+				let gamma1 = new_env @ gamma in
+				let s1 = m(gamma1, M.FN(x, e1), TFun(TVar b1, TVar b2)) in
+				
+				let gamma2 = subst_env s1 gamma in
+				let new_env2 
+					= [(f, generalize gamma2 (s1 (TFun(TVar b1, TVar b2))))] in
+				let gamma3 = new_env2 @ gamma2 in
+
+				let s2 = m(gamma3, e2, (s1 t)) in
+				s2 @@ s1
+
+
 			| M.VAL (x, e1) ->
 				let b = new_var() in
 				let s1 = m(gamma, e1, TVar b) in
@@ -318,6 +345,41 @@ let rec m : typ_env * M.exp * typ -> subst = fun (gamma, exp, t) ->
 				let s2 = m(gamma'', e2, s1 t) in
 				s2 @@ s1
 		)
+		(*
+	| M.LET (d, e2) -> 
+		( match d with 
+			| M.REC (f, x, e1) -> 
+				(* bind the function name f *)
+				let beta = TVar(new_var()) in
+				let gamma' = [(f, SimpleTyp beta)] @ gamma in
+				(* with f-binded environment gamma' *)
+				(* check the function x=>e1 *)
+				let (s1, t1) = w(gamma', M.FN(x, e1)) in
+				(* beta : type of f -> should be same as t *)
+				let s_uni = unify(s1 beta, t1) in
+				let s' = s_uni @@ s1 in
+				(* generalize!! *)
+				let gamma'' = 
+					if(expansive (M.FN(x, e1))) then [(f, SimpleTyp (s' t1))] @ gamma'
+					else [(f, generalize gamma' (s' t1))] @ gamma' in
+				let (s2, t2) = w(gamma'', e2) in
+				let s' = s2 @@ s_uni @@ s1 in
+				(s', s' t2)
+
+			| M.VAL (x, e1) ->
+				let (s1, t1) = w(gamma, e1) in
+				let gamma' = subst_env s1 gamma in
+				(* generalize!! *)
+				let gamma'' =
+					if (expansive e1) then [(x, SimpleTyp t1)] @ gamma'
+					else [(x, generalize gamma' t1)] @ gamma' in
+				let (s2, t2) = w(gamma'', e2) in
+				let s' = (s2 @@ s1) in
+				(s', s' t2)
+		)
+		
+
+		*)
 
 	| M.BOP (op, e1, e2) -> 
 		(match op with
@@ -351,7 +413,7 @@ let rec m : typ_env * M.exp * typ -> subst = fun (gamma, exp, t) ->
 				let s2' = s2 @@ s1 in
 				let s3 = m(gamma'', e2, s2' (TVar b)) in
 				let s3' = s3 @@ s2 @@ s1 in
-				let s4 = unify(TIBSL b, s3' (TVar b)) in
+				let s4 = unify(TIBSL b', s3' (TVar b)) in
 				let s4' = s4 @@ s3 @@ s2 @@ s1 in
 				s4'
 		)
@@ -367,6 +429,11 @@ let rec m : typ_env * M.exp * typ -> subst = fun (gamma, exp, t) ->
 			s2 @@ s1
 
 		| M.PAIR (e1, e2) ->
+			(*
+			let _ = print_endline "PAIR" in
+			let _ = prt t in
+			let _ = print_endline "" in
+			*)
 			(* t must be a pair (b1, b2) type *)
 			let b1 = new_var() in
 			let b2 = new_var() in
@@ -380,159 +447,67 @@ let rec m : typ_env * M.exp * typ -> subst = fun (gamma, exp, t) ->
 			let s3' = s3 @@ s2 @@ s1 in 
 			s3'
 			
+		| M.FST e ->
+			(*
+			let _ = print_endline "FST" in
+			let _ = prt t in
+			let _ = print_endline "" in
+			*)
+			let b = new_var() in
+			let s = m(gamma, e, TPair(t, TVar b)) in
+			s
 
+		| M.SND e ->
+			(*
+			let _ = print_endline "SND" in
+			let _ = prt t in
+			let _ = print_endline "" in
+			*)
+			let b = new_var() in
+			let s = m(gamma, e, TPair(TVar b, t)) in
+			s
+
+		| M.MALLOC e ->
+			let b = new_var() in
+			let s1 = unify (t, (TLoc(TVar b))) in
+			let gamma' = subst_env s1 gamma in
+			let s2 = m(gamma', e, (s1 (TVar b))) in
+			s2 @@ s1
+
+	 	| M.ASSIGN (e1, e2) ->
+			(* e1 := e2 *)
+			(* e2 must be t type and e1 must be loc t type *)
+			let s1 = m(gamma, e2, t) in
+			let gamma' = subst_env s1 gamma in
+			let s2 = m(gamma', e1, (s1(TLoc t))) in
+			s2 @@ s1
+
+		| M.BANG e -> 
+			let s = m(gamma, e, (TLoc t)) in
+			s
+
+		| M.IF (e1, e2, e3) ->
+			(* e1 must be bool type *)
+			let s1 = m(gamma, e1, TBool) in
+			let gamma' = subst_env s1 gamma in
+			let s2 = m(gamma', e2, s1 t) in
+			let gamma'' = subst_env s2 gamma' in
+			let s2' = s2 @@ s1 in
+			let s3 = m(gamma'', e3, s2' t) in
+			let s3' = s3 @@ s2 @@ s1 in
+			s3'
+
+		| M.WRITE e ->
+			let b = new_var() in
+			let s1 = unify(t, (TIBS b)) in
+			let gamma' = subst_env s1 gamma in
+			let s2 = m(gamma', e, s1 t) in
+			s2 @@ s1
+
+
+
+			
 		(*
-	
-	| M.PAIR (e1, e2) -> (* (e1, e2) *)
-		let (s1, t1) = w(gamma, e1) in
-		let gamma' = subst_env s1 gamma in
-		let (s2, t2) = w(gamma', e2) in
-		let s' = s2 @@ s1 in
-		(s', s'(TPair (t1, t2)))
-
-	| M.IF (e1, e2, e3) ->
-		(* condition : bool *)
-		let (s1, t1) = w(gamma, e1) in
-		let s_cond = unify(t1, TBool) in
-
-		(* if and else statement : should have same type *)
-		let s' = s_cond @@ s1 in
-		let gamma' = subst_env s' gamma in
-		let (s2, t2) = w(gamma', e2) in
-		let s' = (s2 @@ s_cond @@ s1) in
-		let gamma' = subst_env s' gamma in
-		let (s3, t3) = w(gamma', e3) in
-		let s_stmt = unify(t2, t3) in
-		let s' = s_stmt @@ s3 @@ s2 @@ s_cond @@ s1 in
-		(s', s' t3)
-		
-	| M.READ -> (empty_subst, TInt)
-
-	| M.WRITE e -> 
-		let (s, t) = w(gamma, e) in
-		let v_ibs = TIBS(new_var()) in
-		let s_ibs = unify(t, v_ibs) in
-		let s' = s_ibs @@ s in
-		(s', s' t)
-
-	| M.MALLOC e -> (* malloc e *)
-		let (s, t) = w(gamma, e) in
-		(s, s (TLoc t))
-
-	| M.ASSIGN (e1, e2) -> (* e1 := e2 *)
-		let (s1, t1) = w(gamma, e1) in
-		let gamma' = subst_env s1 gamma in
-		let (s2, t2) = w(gamma', e2) in
-		(* first elmt should be a location type *)
-		(match t1 with
-		 	| TLoc l ->
-				(* loc type and the second type should be same *)
-				let s_loc = unify(l, t2) in
-				let s' = s_loc @@ s2 @@ s1 in
-				(s', s' t2) 
-			| TVar v -> 
-				let l = TVar(new_var()) in
-				let s' = unify(TLoc l, t1) in
-				let s'' = unify(l, t2) in
-				let snew = s''@@s'@@s2@@s1 in
-				(snew, snew t2)
-				
-			| _ -> raise (M.TypeError "cannot be assigned")
-		)
-	
-	| M.BANG e -> (* !e *)
-		(* e must have a location type *)
-		let (s, t) = w(gamma, e) in
-		(match t with 
-			| TLoc l -> (s, s l)
-			| TVar v ->
-				let beta = TVar(new_var()) in
-				let snew = make_subst v (TLoc beta) in
-				let s' = snew @@ s in
-				(s', s' beta)
-			| _-> raise (M.TypeError "error at BANG")
-		)
-				 
-	
-	| M.FST e ->
-		(* e must be a pair type *)
-		let	(s, t) = w(gamma, e) in
-		(match t with
-			| TPair (t1, t2) -> (s, s t1)
-			| TVar v ->
-				let beta1 = TVar(new_var()) in
-				let beta2 = TVar(new_var()) in
-				let snew = make_subst v (TPair(beta1, beta2)) in
-				let s' = snew @@ s in
-				(s', s' beta1)
-			| _ -> raise (M.TypeError "error at FST") 
-		)
-
-	| M.SND e ->
-		(* e must be a pair type *)
-		let	(s, t) = w(gamma, e) in
-		(match t with
-			| TPair (t1, t2) -> (s, s t2)
-			| TVar v ->
-				let beta1 = TVar(new_var()) in
-				let beta2 = TVar(new_var()) in
-				let snew = make_subst v (TPair(beta1, beta2)) in
-				let s' = snew @@ s in
-				(s', s' beta2)
-			| _ -> raise (M.TypeError "error at SND") 
-		)
-		(*
-		 | M.FST e ->
-			(* e must be a pair type *)
-			let	(s, t) = w(gamma, e) in
-			let beta1 = TVar(new_var()) in
-			let beta2 = TVar(new_var()) in
-			let s_uni = unify(t, TPair(beta1, beta2)) in
-			let s' = s_uni @@ s in
-			(s', s' beta1)
-	 
-	 	| M.SND e ->
-			(* e must be a pair type *)
-			let	(s, t) = w(gamma, e) in
-			let beta1 = TVar(new_var()) in
-			let beta2 = TVar(new_var()) in
-			let s_uni = unify(t, TPair(beta1, beta2)) in
-			let s' = s_uni @@ s in
-			(s', s' beta2)
-
-	| M.LET (d, e2) -> 
-		( match d with 
-			| M.REC (f, x, e1) -> 
-				(* bind the function name f *)
-				let beta = TVar(new_var()) in
-				let gamma' = [(f, SimpleTyp beta)] @ gamma in
-				(* with f-binded environment gamma' *)
-				(* check the function x=>e1 *)
-				let (s1, t1) = w(gamma', M.FN(x, e1)) in
-				(* beta : type of f -> should be same as t *)
-				let s_uni = unify(s1 beta, t1) in
-				let s' = s_uni @@ s1 in
-				(* generalize!! *)
-				let gamma'' = 
-					if(expansive (M.FN(x, e1))) then [(f, SimpleTyp (s' t1))] @ gamma'
-					else [(f, generalize gamma' (s' t1))] @ gamma' in
-				let (s2, t2) = w(gamma'', e2) in
-				let s' = s2 @@ s_uni @@ s1 in
-				(s', s' t2)
-
-			| M.VAL (x, e1) ->
-				let (s1, t1) = w(gamma, e1) in
-				let gamma' = subst_env s1 gamma in
-				(* generalize!! *)
-				let gamma'' =
-					if (expansive e1) then [(x, SimpleTyp t1)] @ gamma'
-					else [(x, generalize gamma' t1)] @ gamma' in
-				let (s2, t2) = w(gamma'', e2) in
-				let s' = (s2 @@ s1) in
-				(s', s' t2)
-		)
-
-		*)
 		*)
 
 let rec output_type = fun t ->
@@ -543,6 +518,7 @@ let rec output_type = fun t ->
   | TPair (t1, t2) -> M.TyPair (output_type t1, output_type t2)
   | TLoc l -> M.TyLoc (output_type l)
 	| _ -> 
+	let _ = prt t in
 	raise(M.TypeError "Type is not determined in closed form")
 
 let check : M.exp -> M.typ = fun exp ->
