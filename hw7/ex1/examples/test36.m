@@ -11,9 +11,15 @@ in
       val b = true
       val l = malloc "test"
   in
-    bar (l, malloc "wrong");
+    bar (l, malloc 1);
     bar (i, 2);
     bar (b, true);
     bar (s, "bye world")
   end
 end
+
+	(*
+	let val x = malloc 1 in
+	x
+	end
+*)

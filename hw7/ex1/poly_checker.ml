@@ -94,7 +94,8 @@ let subst_scheme : subst -> typ_scheme -> typ_scheme = fun subs tyscm ->
   | SimpleTyp t -> SimpleTyp (subs t)
   | GenTyp (alphas, t) ->
     (* S (\all a.t) = \all b.S{a->b}t  (where b is new variable) *)
-    let betas = List.map (fun _ -> new_var()) alphas in
+	let b = new_var() in
+    let betas = List.map (fun _ -> b) alphas in
     let s' =
       List.fold_left2
         (fun acc_subst alpha beta -> make_subst alpha (TVar beta) @@ acc_subst)
@@ -181,11 +182,19 @@ let rec unify : typ * typ -> subst = fun (t1, t2) ->
 	(* type ans variable -> variable must not be in the type *)
 	| (t, TVar a)
 	| (TVar a, t) ->
+		let _ = print_endline ("*unifyVAR "^a) in
+		let _ = prt t in
 		if (var_in_type t a) then (* fails *)
 			raise (M.TypeError "unify failure TVar")
 		else 
 		(match t with
-			| _ -> 	make_subst a t
+			| _ -> 
+				let temp = make_subst a t in
+				let _ = print_endline "after subs" in
+				let _ = prt (temp t2) in
+				temp
+
+
 		)
 
 	(* IBSL type *)
@@ -224,10 +233,10 @@ let rec unify : typ * typ -> subst = fun (t1, t2) ->
 			raise (M.TypeError "unify failure TIBS")
 		)
 
-	| _ ->                 let _ = prt t1 in
-					                let _ = prt t2 in 
-
-	raise (M.TypeError "unify failure, no...") 
+	| _ -> 
+		let _ = prt t1 in
+        let _ = prt t2 in 
+		raise (M.TypeError "unify failure, no...") 
 
 let rec expansive = fun exp ->
 	match exp with
@@ -239,7 +248,7 @@ let rec expansive = fun exp ->
 	| M.BANG e -> false
 	| M.APP (e1, e2) -> true
 	| M.MALLOC e -> true
- 	| M.ASSIGN (e1, e2) -> true
+ 	| M.ASSIGN (e1, e2) -> (expansive e1)||(expansive e2)
 	| M.IF (e1, e2, e3) -> (expansive e1)||(expansive e2)||(expansive e3)
 	| M.LET (M.VAL (x, e1), e2) -> (expansive e1)||(expansive e2)
 	| M.LET (M.REC (f, x, e1), e2) -> (expansive e1)||(expansive e2)
@@ -260,18 +269,26 @@ let rec w : typ_env * M.exp -> subst * typ = fun (gamma, exp) ->
 	| M.VAR v -> 
 		begin 
 		try
+			(*let _ = print_endline (new_var()) in*)
 			let ts = search_env gamma v in
 			(* this function with empty_subst will automatically build {ai->bi}t *)
 			let new_ts = subst_scheme empty_subst ts in
 			(match new_ts with
-				| SimpleTyp t -> (empty_subst, t)
+				| SimpleTyp t -> 
+					(*let s_uni = unify(t, ts) in*)
+						let _ = print_endline "*VAR" in
+						let s_uni = empty_subst in
+						let _ = prt t in
+						(s_uni, s_uni t)
 				| GenTyp (_, t) -> (empty_subst, t)
 			)
 		with Not_found -> raise (M.TypeError (v^" is not declared"))
 		end
 
 	| M.FN (x, e) -> 
-		let beta = TVar(new_var()) in
+		let b = new_var() in
+		let beta = TVar(b) in
+		let _ = print_endline ("*FN "^b) in
 		(* add x:beta in the env. *)
 		let gamma' = [(x, SimpleTyp(beta))]@gamma in 
 		let (s, t) = w(gamma', e) in
@@ -281,11 +298,17 @@ let rec w : typ_env * M.exp -> subst * typ = fun (gamma, exp) ->
 	| M.APP (e1, e2) -> 
 		let (s1, t1) = w(gamma, e1) in
 		let (s2, t2) = w(subst_env s1 gamma, e2) in
-		let beta = TVar(new_var()) in
+		let _ = print_endline "*APP" in
+		let _ = prt t1 in
+		let _ = prt t2 in
+
+		let b = new_var() in
+		let beta = TVar(b) in
+		let _ = print_endline ("APP "^b) in
 		(* first statement : ftn type *)
 		let s3 = unify(s2 t1, TFun(t2, beta)) in
 		let s' = (s3 @@ s2 @@ s1) in
-		(s', s3 beta)
+		(s', s' beta)
 
 	| M.LET (d, e2) -> 
 		( match d with 
@@ -305,10 +328,12 @@ let rec w : typ_env * M.exp -> subst * typ = fun (gamma, exp) ->
 					else [(f, generalize gamma' (s' t1))] @ gamma' in
 				let (s2, t2) = w(gamma'', e2) in
 				let s' = s2 @@ s_uni @@ s1 in
-				(s', s_uni t2)
+				(s', s' t2)
 
 			| M.VAL (x, e1) ->
 				let (s1, t1) = w(gamma, e1) in
+				let _ = print_endline "*LET_V" in
+				let _ = prt t1 in
 				let gamma' = subst_env s1 gamma in
 				(* generalize!! *)
 				let gamma'' =
@@ -316,7 +341,7 @@ let rec w : typ_env * M.exp -> subst * typ = fun (gamma, exp) ->
 					else [(x, generalize gamma' t1)] @ gamma' in
 				let (s2, t2) = w(gamma'', e2) in
 				let s' = (s2 @@ s1) in
-				(s', t2)
+				(s', s' t2)
 		)
 
 	| M.BOP (op, e1, e2) -> 
@@ -376,6 +401,9 @@ let rec w : typ_env * M.exp -> subst * typ = fun (gamma, exp) ->
 
 	| M.WRITE e -> 
 		let (s, t) = w(gamma, e) in
+		let _ = print_endline "WRITING!" in
+		let _ = prt t in
+
 		let v_ibs = TIBS(new_var()) in
 		let s_ibs = unify(t, v_ibs) in
 		let s' = s_ibs @@ s in
@@ -492,4 +520,7 @@ let rec output_type = fun t ->
 
 let check : M.exp -> M.typ = fun exp ->
   let (_, t) = w ([], exp) in
-	output_type t
+	let temp = output_type t in
+
+	temp
+
